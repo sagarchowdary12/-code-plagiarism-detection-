@@ -1,4 +1,4 @@
-# Tokenizer Deep Dive: How It Works
+ # Tokenizer Deep Dive: How It Works
 
 ## Overview
 The tokenizer is the first engine in our dual-detection system. It converts source code into normalized tokens and uses the **Winnowing algorithm** to create fingerprints that can detect copied code even when students try to hide it.
@@ -47,23 +47,25 @@ def clean_code_from_db(source_code: str) -> str:
 ```
 
 ---
-
 ## Step 2: Remove Comments Using Tree-Sitter
-
-**Function**: `remove_comments_universally()`
+Function**: `remove_comments_universally()`
 
 **Purpose**: Comments are noise. Students often change comments to hide plagiarism. We remove them completely.
 
-**Why Tree-Sitter?**
+**Why Tree-Sitter for comment removal?**
 - Regex-based comment removal fails on edge cases (strings containing `//`, nested comments, etc.)
-- Tree-sitter is a production-grade parser that understands code structure
-- Used by GitHub Copilot, Atom editor, and other major tools
+- Tree-sitter can accurately identify what is a comment vs what is code
+- We're NOT doing full AST analysis here - just using the parser to find comments
+
+**Note**: This is different from the AST-based detection engine. Here we're only using Tree-sitter to clean the code. The actual AST structural analysis happens separately in `ast_comparator.py`.
 
 **How it works**:
-1. Parse code into Abstract Syntax Tree (AST)
+1. Parse code using Tree-sitter (lightweight parsing, just to find comments)
 2. Find all nodes with type containing "comment"
 3. Delete those byte ranges from the source
 4. Return cleaned code
+
+**Important**: This is NOT the same as AST analysis! Here we're only using Tree-sitter's parser to identify and remove comments. The actual AST structural analysis happens in a separate engine (`ast_comparator.py`).
 
 **Example**:
 ```python
