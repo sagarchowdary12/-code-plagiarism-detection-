@@ -8,10 +8,6 @@
 2. [Technical Architecture](#technical-architecture)
 3. [Core Detection Methods](#core-detection-methods)
 4. [Demo Walkthrough](#demo-walkthrough)
-5. [Screenshot Guide](#screenshot-guide)
-6. [API Documentation](#api-documentation)
-7. [Q&A Section](#qa-section)
-
 ---
 
 ## Project Overview
