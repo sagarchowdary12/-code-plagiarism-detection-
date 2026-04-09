@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment variables (IMPORTANT: Never commit credentials!)
+.env
+
+# Temporary folders
+-p/
+
+# Allow README and docs
+!README.md
+!docs/*.md
