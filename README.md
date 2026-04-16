@@ -55,8 +55,11 @@ Then visit: http://localhost:8000/docs
 
 ## Documentation
 
-See the `docs/` folder for detailed documentation:
+See the `docs/` folder for technical reports:
 - `DEMO_PRESENTATION.md` - Complete presentation guide
+- [FINAL_REFACTOR_REPORT.pdf](docs/FINAL_REFACTOR_REPORT.pdf) - Official summary report
+
+Detailed research and algorithm deep-dives can be found in `docs/archives/`:
 - `WINNOWING_STEP_BY_STEP.md` - Algorithm explanation
 - `TOKENIZER_EXPLAINED.md` - Tokenizer deep dive
-- And more...
+- `ALTERNATIVE_METHODS.md` - Research notes

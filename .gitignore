@@ -20,4 +20,7 @@ ENV/
 
 # Allow README and docs
 !README.md
-!docs/*.md
+!docs/
+!docs/**
+!docs/**/*.md
+!docs/**/*.pdf
