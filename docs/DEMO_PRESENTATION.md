@@ -56,21 +56,21 @@ plagiarism-service/
 ## The 6 Architectural Fixes
 This version of the service implements six critical fixes to move from a prototype to a production-ready engine:
 
-1.  **Fix 1: Language-Based Grouping** - Prevented invalid cross-language comparisons.
-2.  **Fix 2: Independent AST Pipeline** - Removed the "token gate" so smart copies are always caught.
-3.  **Fix 3: AST Winnowing** - Replaced naive set comparison with ordered structural hashing.
-4.  **Fix 4: Label-Derived Metrics** - Dashboard summary is now powered by detection labels.
-5.  **Fix 5: Neutral Recalibration** - All labels converted to legally safe, signal-based terms.
-6.  **Fix 6: Strict Token Gating** - Comments are stripped before checking code length.
+1. Fix 1: Language-Based Grouping - Prevented invalid cross-language comparisons.
+2. Fix 2: Independent AST Pipeline - Removed the "token gate" so smart copies are always caught.
+3. Fix 3: AST Winnowing - Replaced naive set comparison with ordered structural hashing.
+4. Fix 4: Label-Derived Metrics  - Dashboard summary is now powered by detection labels.
+5. Fix 5: Neutral Recalibration  - All labels converted to legally safe, signal-based terms.
+6. Fix 6: Strict Token Gating  - Comments are stripped before checking code length.
 
 ---
 
 ## Core Detection Methods
 
 ### 1. Token-Based Winnowing
-**Purpose**: Detect copied code snippets even with noise insertions.
+Purpose: Detect copied code snippets even with noise insertions.
 
-**How it works**:
+How it works :
 1. Normalize code (remove comments, genericize identifiers).
 2. Create sliding k-gram windows.
 3. Hash and "winnow" to create a unique code fingerprint.
@@ -79,15 +79,15 @@ This version of the service implements six critical fixes to move from a prototy
 ---
 
 ### 2. AST-Based Detection (Structural Winnowing)
-**Purpose**: Catch "smart plagiarism" where students hide the copy by renaming everything.
+Purpose : Catch "smart plagiarism" where students hide the copy by renaming everything.
 
-**How it works**:
+How it works:
 1. Parse code into a Tree-Sitter AST.
-2. Filter for **Structural nodes** only (loops, conditionals, assignments).
-3. Apply winnowing hashing to the **node sequence**, preserving order and depth.
+2. Filter for Structural nodes only (loops, conditionals, assignments).
+3. Apply winnowing hashing to the node sequence, preserving order and depth.
 4. Catch pairs where surface text is different but logic structure is identical.
 
-**Result**: Even if a student renames `max` to `highest` and adds 10 `print()` statements, the AST Winnowed score remains nearly **100%**.
+Result : Even if a student renames `max` to `highest` and adds 10 `print()` statements, the AST Winnowed score remains nearly 100%.
 
 ---
 
