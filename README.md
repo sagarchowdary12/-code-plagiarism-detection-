@@ -23,9 +23,9 @@ plagiarism-service/
 │   └── neon.py                   # PostgreSQL (Neon) connection
 │
 └── 📁 docs/                      # Detailed technical documentation
-    ├── DEMO_PRESENTATION.md      # Complete presentation guide
-    ├── WINNOWING_STEP_BY_STEP.md # Algorithm explanation
-    └── ...
+    ├── FINAL_REFACTOR_REPORT.pdf # Official summary report
+    ├── DEMO_PRESENTATION.md      # Presentation guide
+    └── 📁 archives/              # Background research & deep-dives
 
 ```
 

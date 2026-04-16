@@ -105,7 +105,10 @@ plagiarism-service/
 │   └── scorer.py             # Scoring and classification
 ├── models/
 │   └── schemas.py            # API request/response schemas
-└── docs/                     # Detailed technical documentation
+└── docs/                     # Technical documentation
+    ├── FINAL_REFACTOR_REPORT.pdf # Official summary report
+    ├── DEMO_PRESENTATION.md      # Presentation guide
+    └── archives/              # Research & algorithm deep-dives
 ```
 
 ## Troubleshooting
