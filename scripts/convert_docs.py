@@ -3,82 +3,133 @@ import re
 from docx import Document
 from docx.shared import Pt, RGBColor
 from fpdf import FPDF
-import markdown
 
 # Paths
 SOURCE_MD = "docs/MASTER_PROJECT_DOCUMENTATION.md"
 OUTPUT_DOCX = "docs/MASTER_PROJECT_DOCUMENTATION.docx"
 OUTPUT_PDF = "docs/MASTER_PROJECT_DOCUMENTATION.pdf"
 
-class PDF(FPDF):
+class ProfessionalPDF(FPDF):
     def header(self):
-        self.set_font('Arial', 'B', 12)
-        self.cell(0, 10, 'Plagiarism Detection Service v3.0.0 - Project Documentation', 0, 1, 'C')
-        self.ln(5)
+        if self.page_no() > 1: # Don't show header on title page if we had one, but here we just show it everywhere
+            self.set_font('Helvetica', 'B', 10)
+            self.set_text_color(100, 100, 100)
+            self.cell(0, 10, 'Plagiarism Detection Service - Technical Documentation', 0, 1, 'R')
+            self.line(10, 18, 200, 18)
+            self.ln(5)
 
     def footer(self):
         self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
+        self.set_font('Helvetica', 'I', 8)
+        self.set_text_color(150, 150, 150)
         self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+
+def clean_text(text):
+    # Remove v3.0.0 and markdown bold markers
+    text = text.replace("(v3.0.0)", "").strip()
+    text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    # Remove link markers [text](#link) -> text
+    text = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', text)
+    return text.encode('latin-1', 'replace').decode('latin-1')
 
 def convert_to_docx(content):
     doc = Document()
     
-    # Simple markdown parser for the purposes of this specialized report
+    # Remove v3.0.0 from title
+    content = content.replace("(v3.0.0)", "")
+    
     lines = content.splitlines()
+    is_toc = False
+    
     for line in lines:
         if line.startswith('# '):
-            p = doc.add_heading(line[2:], level=0)
+            doc.add_heading(clean_text(line[2:]), level=0)
         elif line.startswith('## '):
-            doc.add_heading(line[3:], level=1)
+            text = clean_text(line[3:])
+            doc.add_heading(text, level=1)
+            is_toc = "Table of Contents" in text
         elif line.startswith('### '):
-            doc.add_heading(line[4:], level=2)
+            doc.add_heading(clean_text(line[4:]), level=2)
         elif line.startswith('* '):
-            doc.add_paragraph(line[2:], style='List Bullet')
+            p = doc.add_paragraph(clean_text(line[2:]), style='List Bullet')
+        elif line.startswith('    * '): # Sub-list
+            p = doc.add_paragraph(clean_text(line[6:]), style='List Bullet 2')
         elif line.startswith('1. ') or re.match(r'^\d+\.', line):
             text = re.sub(r'^\d+\.\s*', '', line)
-            doc.add_paragraph(text, style='List Number')
+            p = doc.add_paragraph(clean_text(text), style='List Number')
+            if is_toc: # Indent TOC items
+                 p.paragraph_format.left_indent = Pt(20)
         elif line.strip() == '---':
-            doc.add_page_break() # Using horizontal rules as page breaks for a cleaner look
+            doc.add_page_break()
         elif line.startswith('```'):
-            continue # Skip code block markers
+            continue 
         elif line.strip():
-            # Handle some basic inline formatting
-            p = doc.add_paragraph()
-            text = line
-            # Bold
-            text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)
-            p.add_run(text)
+            doc.add_paragraph(clean_text(line))
             
     doc.save(OUTPUT_DOCX)
     print(f"Successfully created {OUTPUT_DOCX}")
 
 def convert_to_pdf(content):
-    pdf = PDF()
+    pdf = ProfessionalPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    
+    # Title Styling
+    pdf.set_font("Helvetica", 'B', 24)
+    pdf.set_text_color(20, 50, 100)
+    pdf.cell(0, 30, "Project Documentation", ln=True, align='C')
+    pdf.set_font("Helvetica", 'B', 18)
+    pdf.cell(0, 10, "Plagiarism Detection Service", ln=True, align='C')
+    pdf.ln(20)
     
     lines = content.splitlines()
+    is_toc = False
+    
     for line in lines:
         if line.startswith('# '):
-            pdf.set_font("Arial", 'B', 18)
-            pdf.cell(0, 15, line[2:].encode('latin-1', 'replace').decode('latin-1'), ln=True)
-            pdf.ln(5)
+            continue # Already handled in title
         elif line.startswith('## '):
-            pdf.set_font("Arial", 'B', 14)
-            pdf.cell(0, 10, line[3:].encode('latin-1', 'replace').decode('latin-1'), ln=True)
-            pdf.ln(2)
+            pdf.ln(10)
+            text = clean_text(line[3:])
+            is_toc = "Table of Contents" in text
+            pdf.set_font("Helvetica", 'B', 16)
+            pdf.set_text_color(30, 70, 120)
+            pdf.cell(0, 12, text, ln=True)
+            pdf.line(pdf.get_x(), pdf.get_y(), pdf.get_x() + 190, pdf.get_y())
+            pdf.ln(4)
         elif line.startswith('### '):
-            pdf.set_font("Arial", 'B', 12)
-            pdf.cell(0, 10, line[4:].encode('latin-1', 'replace').decode('latin-1'), ln=True)
+            pdf.ln(5)
+            pdf.set_font("Helvetica", 'B', 13)
+            pdf.set_text_color(50, 50, 50)
+            pdf.cell(0, 10, clean_text(line[4:]), ln=True)
+        elif line.startswith('    * '): # Sub-bullet in TOC
+            pdf.set_font("Helvetica", size=10)
+            pdf.set_text_color(80, 80, 80)
+            pdf.set_x(25)
+            pdf.cell(0, 7, f"- {clean_text(line[6:])}", ln=True)
+        elif line.startswith('* '):
+            pdf.set_font("Helvetica", size=11)
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_x(15)
+            pdf.multi_cell(0, 7, f"\x07  {clean_text(line[2:])}")
+        elif line.startswith('1. ') or re.match(r'^\d+\.', line):
+            text = re.sub(r'^\d+\.\s*', '', line)
+            pdf.set_font("Helvetica", size=11)
+            pdf.set_text_color(0, 0, 0)
+            if is_toc:
+                pdf.set_x(20)
+                pdf.cell(0, 8, f"{line.split('.')[0]}. {clean_text(text)}", ln=True)
+            else:
+                pdf.set_x(15)
+                pdf.multi_cell(0, 8, f"{line.split('.')[0]}. {clean_text(text)}")
         elif line.strip() == '---':
             pdf.add_page()
+        elif line.startswith('```'):
+            continue
         elif line.strip():
-            pdf.set_font("Arial", size=11)
-            # Remove bold markers for PDF (fpdf basic doesn't handle inline markdown easily)
-            clean_line = re.sub(r'\*\*(.*?)\*\*', r'\1', line)
-            pdf.multi_cell(0, 8, clean_line.encode('latin-1', 'replace').decode('latin-1'))
+            pdf.set_font("Helvetica", size=11)
+            pdf.set_text_color(0, 0, 0)
+            pdf.multi_cell(0, 6, clean_text(line))
             pdf.ln(2)
             
     pdf.output(OUTPUT_PDF)
@@ -92,10 +143,10 @@ def main():
     with open(SOURCE_MD, "r", encoding="utf-8") as f:
         content = f.read()
 
-    print("Converting to DOCX...")
+    print("Generating Enhanced DOCX...")
     convert_to_docx(content)
     
-    print("Converting to PDF...")
+    print("Generating Professional PDF...")
     convert_to_pdf(content)
 
 if __name__ == "__main__":
