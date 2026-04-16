@@ -32,16 +32,15 @@ source venv/bin/activate
 ```
 
 ### 4. Install dependencies
+
 ```bash
-pip install fastapi uvicorn psycopg2-binary python-dotenv pydantic
-pip install tree-sitter
-pip install tree-sitter-python tree-sitter-java tree-sitter-javascript
-pip install tree-sitter-c tree-sitter-cpp tree-sitter-rust tree-sitter-go
-pip install tree-sitter-php tree-sitter-ruby tree-sitter-typescript
-pip install tree-sitter-bash tree-sitter-html tree-sitter-css
-pip install tree-sitter-json tree-sitter-yaml tree-sitter-toml
-pip install tree-sitter-kotlin tree-sitter-scala tree-sitter-haskell
-pip install tree-sitter-lua tree-sitter-swift tree-sitter-sql tree-sitter-ocaml
+pip install -r requirements.txt
+```
+
+If you prefer to install manually:
+```bash
+pip install fastapi uvicorn psycopg2-binary python-dotenv pydantic tree-sitter
+# Then install individual language parsers...
 ```
 
 ### 5. Create .env file
@@ -74,7 +73,16 @@ CREATE TABLE submissions (
 
 ### Run Demo
 ```bash
-python demo_showcase.py
+python demo_for_team_leader.py
+```
+
+### Run Tests
+```bash
+# Complex evasion test cases
+python test_complex_evasion.py
+
+# Fixes verification tests
+python test_fixes.py
 ```
 
 ### Start API Server
@@ -89,18 +97,19 @@ Then visit: http://localhost:8000/docs
 ```
 plagiarism-service/
 ├── main.py                    # FastAPI REST API server
-├── demo_showcase.py           # Demo script with 7 test cases
+├── demo_for_team_leader.py    # Main demonstration script
+├── test_complex_evasion.py    # Evasion scenario tests
+├── test_fixes.py             # Feature verification tests
+├── requirements.txt           # Project dependencies
 ├── db/
 │   └── neon.py               # Database connection
 ├── detection/
-│   ├── tokenizer.py          # Token-based detection (Winnowing)
+│   ├── tokenizer.py          # Token-based detection
 │   ├── ast_comparator.py     # AST-based detection
 │   └── scorer.py             # Scoring and classification
 ├── models/
 │   └── schemas.py            # API request/response schemas
-└── docs/                     # Documentation
-    ├── DEMO_PRESENTATION.md
-    └── ...
+└── docs/                     # Detailed technical documentation
 ```
 
 ## Troubleshooting

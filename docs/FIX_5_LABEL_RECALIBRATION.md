@@ -1,0 +1,61 @@
+# Fix 5: Recalibrate Pair Labels to Match Actual Confidence
+
+## Overview
+
+This document explains why Fix 5 is required, what the problem is with the current labels, and the changes we will apply.
+
+**File to be changed**: `detection/scorer.py` and `models/schemas.py`, plus updating `main.py`
+**Priority**: 🟡 Medium  
+**Raised by**: post-demo review
+
+---
+
+## What the Code Does Right Now
+
+When `scorer.py` determines that two pieces of code look alike, it assigns a human-readable label. Right now, it assigns the following labels:
+- `"Exact copy"`
+- `"Almost identical"`
+- `"Highly similar"`
+- `"Smart copy — logic identical"`
+- `"Suspicious — high structural overlap"`
+- `"Moderately similar"`
+- `"Slightly similar"`
+
+---
+
+## Why This Is a Problem
+
+Your manager correctly pointed out a major liability issue with these labels: **They accuse the student of "copying" and acting "suspiciously".**
+
+In an academic or legal setting, an automated algorithm cannot **prove intent**, it can only **prove overlap**. If a student challenges a plagiarism accusation, a tool that claims "the student copied" is legally much weaker than a tool that claims "there is 98% textual overlap". 
+
+Using words like "copy", "identical logic", and "suspicious" assumes we know *why* the student wrote the code, which we don't. We only know *what* they wrote.
+
+---
+
+## The Fix
+
+We need to reword these definitions so they only describe **observable similarity signals**, not conclusions about cheating.
+
+We will update all the Python files to use the following new labels:
+
+| Old Label | New Label we will use |
+|-----------|-----------|
+| `Exact copy` | `Exact match` |
+| `Almost identical` | `Near-identical text` |
+| `Highly similar` | `High token overlap` |
+| `Smart copy — logic identical` | `Low text overlap, high structural similarity` |
+| `Suspicious — high structural overlap` | `Moderate similarity — structural and textual` |
+| `Moderately similar` | `Moderate text similarity` *(I will add "text" for clarity)* |
+| `Slightly similar` | `Slight text similarity` *(I will add "text" for clarity)* |
+
+### How this affects the code:
+1. **`scorer.py`**: We will replace the string returns in the `get_label()` function with the new strings.
+2. **`models/schemas.py`**: We will rename the UI dashboard aggregate buckets (e.g. `smart_copies` will become `low_text_high_structure`).
+3. **`main.py`**: We will update the math calculation strings so `main.py` correctly counts the new labels (combining Fix 4 and Fix 5 seamlessly).
+
+---
+
+## Review Required
+
+Please take a look at the table of new labels above. If you agree with the new neutral wording, give me the thumbs up and I will apply the changes across the Python files!

@@ -1,20 +1,20 @@
 from itertools import combinations
 from collections import defaultdict
-from detection.tokenizer import token_similarity_percent, clean_code_from_db as clean_code
+from detection.tokenizer import token_similarity_percent, clean_code_from_db as clean_code, tokenize
 from detection.ast_comparator import ast_similarity_percent
 
 # Minimum tokens required to compare two submissions
 MIN_TOKEN_LENGTH = 5
 
-# Only return pairs where token similarity is AT LEAST this percentage
-# Pairs below this are two students who wrote genuinely different solutions
-# 25% is very generous — anything below is just noise
-MINIMUM_REPORT_PERCENT = 25.0
+# FIX 2: Hybrid Reporting Thresholds
+# Pairs are only dropped if BOTH signals fall below these minimums
+MIN_TOKEN_REPORT_PCT = 25.0
+MIN_AST_REPORT_PCT = 40.0
 
 
-def get_token_count(source_code: str) -> int:
-    cleaned = clean_code(source_code)
-    return len(cleaned.split())
+def get_token_count(source_code: str, language: str) -> int:
+    # FIX 6: Use the actual normalized tokens for gating, not just raw whitespace text.
+    return len(tokenize(source_code, language))
 
 
 def group_identical_submissions(submissions: list) -> dict:
@@ -30,32 +30,32 @@ def group_identical_submissions(submissions: list) -> dict:
 def get_label(token_pct: float, ast_pct: float) -> str:
     # Exactly identical text and logic
     if token_pct == 100 and ast_pct == 100:
-        return "Exact copy"
+        return "Exact match"
 
     # Token very high — obvious copy with tiny changes
     if token_pct >= 90:
-        return "Almost identical"
+        return "Near-identical text"
 
     # Token high — clearly copied with some renaming
     if token_pct >= 75:
-        return "Highly similar"
+        return "High token overlap"
 
     # HUGE: Text is very different (under 75 words match), but the underlying Blueprint is almost perfectly identical (over 95)!
     # This means student rewrote the surface but kept exact same logic. This is deliberate smart plagiarism — worst kind
     if token_pct < 75 and ast_pct >= 95:
-        return "Smart copy — logic identical"
+        return "Low text overlap, high structural similarity"
 
     # Suspicious logic overlap (Token is generic, but structural skeleton matches heavily)
     if token_pct >= 50 and ast_pct >= 75:
-        return "Suspicious — high structural overlap"
+        return "Moderate similarity — structural and textual"
 
     # Token moderate (Generic text overlap, logic wasn't strong enough to hit trap above)
     if token_pct >= 50:
-        return "Moderately similar"
+        return "Moderate text similarity"
 
     # Token low but AST moderate — slightly suspicious
     if token_pct >= 25 and ast_pct >= 50:
-        return "Slightly similar"
+        return "Slight text similarity"
 
     return "Likely original"
 
@@ -80,25 +80,25 @@ def compare_all_submissions(submissions: list) -> list:
         code_a = sub_a["source_code"]
         code_b = sub_b["source_code"]
 
-        # Skip if either code is too short
-        if get_token_count(code_a) < MIN_TOKEN_LENGTH:
+        # Skip if either code's normalized tokens are too short
+        if get_token_count(code_a, language) < MIN_TOKEN_LENGTH:
             continue
-        if get_token_count(code_b) < MIN_TOKEN_LENGTH:
+        if get_token_count(code_b, language) < MIN_TOKEN_LENGTH:
             continue
 
         # Get token similarity percentage
         tok_pct = token_similarity_percent(code_a, code_b, language)
 
-        # SKIP pairs below minimum report threshold
-        # These are not worth showing to the recruiter at all
-        if tok_pct < MINIMUM_REPORT_PERCENT:
-            continue
+        # FIX 2: Compute AST similarity for ALL pairs.
+        # Removing the previous early 'continue' allows us to catch smart
+        # rewrites where token similarity is low but structure is identical.
+        ast_pct = ast_similarity_percent(code_a, code_b, language)
 
-        # Short-Circuit: If the token score is already an exact copy (>95%), we don't need to waste CPU running the AST parser!
-        if tok_pct >= 95:
-            ast_pct = tok_pct
-        else:
-            ast_pct = ast_similarity_percent(code_a, code_b, language)
+        # FIX 2: Hybrid decision rule.
+        # Either token >= 25% or AST >= 40% independently flags the result.
+        # We only drop the pair if BOTH are considered noise.
+        if tok_pct < MIN_TOKEN_REPORT_PCT and ast_pct < MIN_AST_REPORT_PCT:
+            continue
 
         # Get human readable label
         label = get_label(tok_pct, ast_pct)
@@ -120,18 +120,21 @@ def compare_all_submissions(submissions: list) -> list:
 
 
 def run_plagiarism_check(all_submissions: list) -> list:
-    # Group submissions by question_id
+    # FIX 1: Group by (question_id, language) — not just question_id.
+    # This prevents cross-language submissions from being silently compared
+    # using the wrong parser, which produces meaningless similarity scores.
     groups = defaultdict(list)
     for submission in all_submissions:
-        groups[submission["question_id"]].append(submission)
+        key = (submission["question_id"], submission["language"].lower().strip())
+        groups[key].append(submission)
 
     all_results = []
-    for question_id, group in sorted(groups.items()):
+    for (question_id, language), group in sorted(groups.items()):
         if len(group) < 2:
             continue
 
         total_pairs = len(group) * (len(group) - 1) // 2
-        print(f"  Checking {question_id} — "
+        print(f"  Checking {question_id} [{language}] — "
               f"{len(group)} submissions — "
               f"{total_pairs} possible pairs")
 

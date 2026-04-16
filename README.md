@@ -8,20 +8,22 @@ A production-ready FastAPI service that detects code plagiarism across 26+ progr
 plagiarism-service/
 │
 ├── 📄 main.py                    # FastAPI REST API server (START HERE)
-├── 📄 demo_showcase.py           # Demo script with 7 test cases
+├── 📄 demo_for_team_leader.py    # Main demonstration script
+├── 📄 test_complex_evasion.py    # Evasion scenario tests
+├── 📄 test_fixes.py             # Feature verification tests
 │
 ├── 📁 models/                    # API request/response schemas
 │   └── schemas.py
 │
 ├── 📁 detection/                 # Core detection engines
-│   ├── tokenizer.py              # Token-based detection (Winnowing)
+│   ├── tokenizer.py              # Token-based detection
 │   ├── ast_comparator.py         # AST-based detection
 │   └── scorer.py                 # Scoring and classification
 │
 ├── 📁 db/                        # Database connection
 │   └── neon.py                   # PostgreSQL (Neon) connection
 │
-└── 📁 docs/                      # Documentation
+└── 📁 docs/                      # Detailed technical documentation
     ├── DEMO_PRESENTATION.md      # Complete presentation guide
     ├── WINNOWING_STEP_BY_STEP.md # Algorithm explanation
     └── ...
@@ -32,7 +34,7 @@ plagiarism-service/
 
 ### Run Demo
 ```bash
-python demo_showcase.py
+python demo_for_team_leader.py
 ```
 
 ### Start API Server
@@ -47,6 +49,7 @@ Then visit: http://localhost:8000/docs
 - ✅ 26+ programming languages supported
 - ✅ Dual-engine detection (Token + AST)
 - ✅ Catches renamed variables and dummy code
+- ✅ Tree-Sitter Winnowing prevents AST destruction
 - ✅ 7 risk classification levels
 - ✅ REST API with automatic documentation
 - ✅ Scalable batch processing

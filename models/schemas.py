@@ -17,13 +17,15 @@ class PairResult(BaseModel):
 
 
 class QuestionSummary(BaseModel):
-    question_id:         str
-    total_pairs_checked: int
-    exact_copies:        int
-    almost_identical:    int
-    highly_similar:      int
-    moderately_similar:  int
-    slightly_similar:    int
+    question_id:                 str
+    total_pairs_checked:         int
+    exact_match:                 int
+    near_identical_text:         int
+    high_token_overlap:          int
+    low_text_high_structure:     int
+    moderate_structural_textual: int
+    moderate_text_similarity:    int
+    slight_text_similarity:      int
 
 
 class PlagiarismResponse(BaseModel):

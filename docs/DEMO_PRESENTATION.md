@@ -1,35 +1,30 @@
 # Code Plagiarism Detection Service
-## Complete Demo Presentation with Screenshots Guide
+## Complete Demo Presentation Guide (v2.0 - Final Refactor)
 
 ---
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
-2. [Technical Architecture](#technical-architecture)
-3. [Core Detection Methods](#core-detection-methods)
-4. [Demo Walkthrough](#demo-walkthrough)
+2. [Technical Architecture (Finalized)](#technical-architecture)
+3. [The 6 Architectural Fixes](#the-6-architectural-fixes)
+4. [Core Detection Methods](#core-detection-methods)
+5. [Demo Walkthrough](#demo-walkthrough)
 ---
 
 ## Project Overview
 
 ### What is This?
-A production-ready FastAPI service that detects code plagiarism across 26+ programming languages using Token-based and AST-based analysis.
+A production-ready FastAPI service that detects code plagiarism across 26+ programming languages using dual-engine analysis (Token-based + Structural AST).
 
 ### Key Features
-- ✅ Multi-language support (Python, Java, JavaScript, C++, Rust, Go, PHP, Ruby, Swift, Kotlin, and 16+ more)
-- ✅ Dual-engine detection (Token-based + AST-based)
-- ✅ Catches sophisticated plagiarism (renamed variables, added dummy code)
-- ✅ 7 risk classification levels
-- ✅ REST API with automatic documentation
-- ✅ Scalable batch processing
+- ✅ **Multi-language support**: Python, Java, JS, C++, Rust, Go, Ruby, Swift, Kotlin, and 16+ more.
+- ✅ **Dual-engine detection**: Token-based Winnowing + Structural AST Winnowing.
+- ✅ **Smart Evasion Detection**: Catches renamed variables, dummy code, loop mutations, and class-wrapping.
+- ✅ **Neutral Legal Labeling**: Uses non-accusatory signal-based terminology.
+- ✅ **Composite Routing**: Isolated comparisons by `(question_id, language)`.
 
 ### Why It Matters
-Traditional plagiarism tools only check text similarity. Students can easily fool them by:
-- Renaming variables (`max` → `highest`)
-- Adding dummy print statements
-- Changing comments
-
-Our system uses **Token-based and AST analysis** to catch these tricks by comparing code patterns and logic structure, not just the text.
+Traditional tools only check text. Students easily fool them by renaming variables or adding comments. Our system compares **logic structure**, not just the text, making it nearly impossible to evade by simple variable swapping.
 
 ---
 
@@ -39,129 +34,60 @@ Our system uses **Token-based and AST analysis** to catch these tricks by compar
 ```
 Backend:    FastAPI (Python 3.x)
 Database:   PostgreSQL (Neon serverless)
-Parsers:    Tree-sitter (26+ languages)
-Detection:  Token-based (Winnowing) + AST-based (Set comparison)
+Parsers:    Tree-sitter (Universal Parser)
+Detection:  Token-based (Winnowing) + AST-based (Structural Winnowing)
 ```
 
 ### Project Structure
 ```
 plagiarism-service/
 ├── main.py                      # FastAPI REST API
-├── db/
-│   └── neon.py                 # Database connection
 ├── detection/
-│   ├── tokenizer.py            # Token-based similarity (Winnowing)
-│   ├── ast_comparator.py       # AST structural analysis
-│   └── scorer.py               # Scoring engine & label classification
+│   ├── tokenizer.py            # Tokenization & Winnowing
+│   ├── ast_comparator.py       # AST Structural Winnowing (Fix 3)
+│   └── scorer.py               # Hybrid Scoring & Neutral Labeling (Fix 5)
 ├── models/
-│   └── schemas.py              # API request/response models
-└── demo_showcase.py            # Full demo script
+│   └── schemas.py              # Schema for label-based metrics (Fix 4)
+└── demo_for_team_leader.py      # New Comprehensive Demo Script
 ```
+
+---
+
+## The 6 Architectural Fixes
+This version of the service implements six critical fixes to move from a prototype to a production-ready engine:
+
+1.  **Fix 1: Language-Based Grouping** - Prevented invalid cross-language comparisons.
+2.  **Fix 2: Independent AST Pipeline** - Removed the "token gate" so smart copies are always caught.
+3.  **Fix 3: AST Winnowing** - Replaced naive set comparison with ordered structural hashing.
+4.  **Fix 4: Label-Derived Metrics** - Dashboard summary is now powered by detection labels.
+5.  **Fix 5: Neutral Recalibration** - All labels converted to legally safe, signal-based terms.
+6.  **Fix 6: Strict Token Gating** - Comments are stripped before checking code length.
 
 ---
 
 ## Core Detection Methods
 
-### 
-**Purpose**: Detect copied code even with noise insertions
+### 1. Token-Based Winnowing
+**Purpose**: Detect copied code snippets even with noise insertions.
 
 **How it works**:
-1. Normalize code (remove comments, replace identifiers with `VAR`)
-2. Create k-grams (sequences of 5 tokens)
-3. Hash each k-gram
-4. Use sliding window to select minimum hashes
-5. Compare fingerprint sets
-
-**Example**:
-```python
-# Original
-def find_max(arr):
-    max = arr[0]
-    return max
-
-# After normalization
-def VAR(VAR): VAR = VAR[0] return VAR
-
-# K-grams (k=5)
-['def', 'VAR', 'VAR', 'VAR', '=']
-['VAR', 'VAR', 'VAR', '=', 'VAR']
-...
-```
-
-**Why it's better than simple text comparison**:
-- Ignores whitespace, comments, variable names
-- Resistant to small insertions (dummy prints)
-- Guarantees detection of matches above threshold
+1. Normalize code (remove comments, genericize identifiers).
+2. Create sliding k-gram windows.
+3. Hash and "winnow" to create a unique code fingerprint.
+4. Compare fingerprints to find overlapping regions.
 
 ---
 
-### 2. AST-Based Detection (Structural Analysis)
-**Purpose**: Catch "smart plagiarism" where students add dummy code but keep the core logic structure
+### 2. AST-Based Detection (Structural Winnowing)
+**Purpose**: Catch "smart plagiarism" where students hide the copy by renaming everything.
 
 **How it works**:
-1. Parse code into tree structure using Tree-sitter
-2. Extract structural node types (FunctionDef, For, If, Return, etc.)
-3. Filter out non-structural nodes (Call, Expr for print statements)
-4. Compare unique node type sets using Jaccard similarity
+1. Parse code into a Tree-Sitter AST.
+2. Filter for **Structural nodes** only (loops, conditionals, assignments).
+3. Apply winnowing hashing to the **node sequence**, preserving order and depth.
+4. Catch pairs where surface text is different but logic structure is identical.
 
-**Example**:
-```python
-# Student A
-def find_max(arr):
-    max_val = arr[0]
-    for num in arr:
-        if num > max_val:
-            max_val = num
-    return max_val
-
-# AST nodes (structural only)
-['Module', 'FunctionDef', 'Assign', 'For', 'If', 'Compare', 'Assign', 'Return']
-
-# Student B (added dummy prints)
-def get_highest(items):
-    print("Starting...")
-    highest = items[0]
-    for item in items:
-        print("Checking...")
-        if item > highest:
-            highest = item
-    return highest
-
-# AST nodes (structural only - Call nodes from print() are filtered out)
-['Module', 'FunctionDef', 'Assign', 'For', 'If', 'Compare', 'Assign', 'Return']
-```
-
-**Result**: Token similarity: 57%, AST similarity: 100% → AST catches the identical logic despite dummy code!
-
----
-
-### 3. Tree-Sitter Universal Parser
-**Purpose**: Parse 26+ languages with production-grade accuracy
-
-**Supported Languages**:
-Python, Java, JavaScript, TypeScript, C, C++, Rust, Go, PHP, Ruby, Swift, Kotlin, Scala, Haskell, Lua, Bash, HTML, CSS, JSON, YAML, TOML, SQL, OCaml, and more
-
-**Why Tree-sitter**:
-- Used by GitHub Copilot, Atom editor
-- Handles syntax errors gracefully
-- Incremental parsing (fast)
-- Battle-tested on millions of repos
-
----
-
-### 4. Label Classification Engine
-
-**7 Risk Categories**:
-
-| Label | Token % | AST % | Risk | Description |
-|-------|---------|-------|------|-------------|
-| **Exact copy** | 100 | 100 | 🔴 HIGH | Completely identical |
-| **Almost identical** | 90+ | Any | 🔴 HIGH | Tiny changes only |
-| **Highly similar** | 75-89 | Any | 🟡 MEDIUM | Clear copying with renaming |
-| **Smart copy — logic identical** | <75 | 95+ | 🔴 HIGH | Rewrote surface, kept logic (WORST!) |
-| **Suspicious — high structural overlap** | 50+ | 75+ | 🟡 MEDIUM | Significant structural match |
-| **Moderately similar** | 50+ | <75 | 🟢 LOW | Generic overlap |
-| **Slightly similar** | 25+ | 50+ | 🟢 LOW | Minor similarities |
+**Result**: Even if a student renames `max` to `highest` and adds 10 `print()` statements, the AST Winnowed score remains nearly **100%**.
 
 ---
 
@@ -169,72 +95,59 @@ Python, Java, JavaScript, TypeScript, C, C++, Rust, Go, PHP, Ruby, Swift, Kotlin
 
 ### Running the Demo
 ```bash
-python demo_showcase.py
+python demo_for_team_leader.py
 ```
 
-### What the Demo Shows
-- 7 different plagiarism cases
-- 7 different programming languages
-- All 7 label categories
-- Side-by-side code comparison
-- Token + AST scores for each case
+### Key Demo Segments:
+- **Set A**: String algorithms in **Go, Rust, Kotlin**.
+- **Set B**: Data structures in **Python, Java, JS**.
+- **Set C (Critical)**: Two different algorithms to prove **ZERO false positives**.
+- **Set D**: Evasion attempt (Loop mutation) caught via AST.
+- **Multi-Lang**: Bubble Sort across 5 different parsers.
 
 ---
-
-## Screenshot Guide
-
-
 
 ## API Documentation
 
 ### Endpoint: POST `/check-plagiarism`
+Returns metrics derived from the new **Fix 4** summary logic.
 
-**Request Body**:
+**Example Response**:
 ```json
 {
-  "batch_id": "string"
-}
-```
-
-**Response**:
-```json
-{
-  "batch_id": "batch_001",
-  "total_submissions": 50,
-  "total_pairs_checked": 1225,
+  "batch_id": "batch_005",
   "summary_by_question": [
     {
-      "question_id": "q1",
-      "total_pairs_checked": 300,
-      "exact_copies": 5,
-      "almost_identical": 3,
-      "highly_similar": 8,
-      "moderately_similar": 12,
-      "slightly_similar": 15
+      "question_id": "matrix_multiply",
+      "exact_match": 2,
+      "low_text_high_structure": 1,
+      "high_token_overlap": 4,
+      "likely_original": 43
     }
   ],
   "results": [
     {
-      "candidate_a": "student_001",
-      "candidate_b": "student_002",
-      "question_id": "q1",
-      "language": "python",
-      "token_similarity_pct": 92.5,
-      "ast_similarity_pct": 95.0,
-      "label": "Almost identical"
+      "candidate_a": "alice_dev",
+      "candidate_b": "bob_enterprise",
+      "label": "Low text overlap, high structural similarity"
     }
   ]
 }
 ```
 
-### Starting the Server
+---
+
+### Final Service Status
+- **Accuracy**: High (Dual-Engine)
+- **Legal Stand**: Neutral (Signal-Based Labels)
+- **Parsers**: Stable (Tree-Sitter)
+- **Status**: **READY FOR STAGING DEPLOYMENT**
 ```bash
 uvicorn main:app --reload
 ```
 
 ### Accessing API Docs
 ```
-http://localhost:8000/docs
 ```
 
 ---

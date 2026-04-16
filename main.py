@@ -58,14 +58,19 @@ def check_plagiarism(request: PlagiarismRequest):
 
     summaries = []
     for qid, pairs in sorted(by_question.items()):
+        # FIX 4: Derive summary counts from the assigned label (which reflects BOTH engines)
+        # Previously, this block ignored the AST signal entirely by calculating
+        # buckets using only 'token_similarity_pct'.
         summaries.append(QuestionSummary(
-            question_id         = qid,
-            total_pairs_checked = len(pairs),
-            exact_copies        = sum(1 for p in pairs if p["token_similarity_pct"] == 100),
-            almost_identical    = sum(1 for p in pairs if 90  <= p["token_similarity_pct"] < 100),
-            highly_similar      = sum(1 for p in pairs if 75  <= p["token_similarity_pct"] < 90),
-            moderately_similar  = sum(1 for p in pairs if 50  <= p["token_similarity_pct"] < 75),
-            slightly_similar    = sum(1 for p in pairs if 25  <= p["token_similarity_pct"] < 50),
+            question_id                 = qid,
+            total_pairs_checked         = len(pairs),
+            exact_match                 = sum(1 for p in pairs if p["label"] == "Exact match"),
+            near_identical_text         = sum(1 for p in pairs if p["label"] == "Near-identical text"),
+            high_token_overlap          = sum(1 for p in pairs if p["label"] == "High token overlap"),
+            low_text_high_structure     = sum(1 for p in pairs if p["label"] == "Low text overlap, high structural similarity"),
+            moderate_structural_textual = sum(1 for p in pairs if p["label"] == "Moderate similarity — structural and textual"),
+            moderate_text_similarity    = sum(1 for p in pairs if p["label"] == "Moderate text similarity"),
+            slight_text_similarity      = sum(1 for p in pairs if p["label"] == "Slight text similarity"),
         ))
 
     total_pairs = sum(len(v) for v in by_question.values())

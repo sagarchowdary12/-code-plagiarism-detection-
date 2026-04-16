@@ -207,7 +207,7 @@ def winnowing_ast(nodes: list, k: int = 3, window_size: int = 4) -> set:
     return fingerprints
 
 # ─────────────────────────────────────────
-# SIMILARITY (WITHOUT WINNOWING - Direct Set Comparison)
+# SIMILARITY (WITH WINNOWING AST)
 # ─────────────────────────────────────────
 
 
@@ -218,9 +218,10 @@ def ast_similarity_percent(code_a: str, code_b: str, language: str = 'python') -
     if not nodes_a or not nodes_b:
         return 0.0
 
-    # Direct set comparison without winnowing
-    set_a = set(nodes_a)
-    set_b = set(nodes_b)
+    # FIX 3: Use winnowing fingerprints instead of unordered set extraction.
+    # This mathematically preserves code ordering, repetition, and depth.
+    set_a = winnowing_ast(nodes_a)
+    set_b = winnowing_ast(nodes_b)
 
     intersection = set_a & set_b
     union = set_a | set_b
@@ -229,4 +230,4 @@ def ast_similarity_percent(code_a: str, code_b: str, language: str = 'python') -
         return 0.0
 
     score = (len(intersection) / len(union)) * 100
-    return round(score, 2)
+    return float(round(score, 2))
