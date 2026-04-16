@@ -80,9 +80,6 @@ python demo_for_team_leader.py
 ```bash
 # Complex evasion test cases
 python test_complex_evasion.py
-
-# Fixes verification tests
-python test_fixes.py
 ```
 
 ### Start API Server
@@ -99,7 +96,6 @@ plagiarism-service/
 ├── main.py                    # FastAPI REST API server
 ├── demo_for_team_leader.py    # Main demonstration script
 ├── test_complex_evasion.py    # Evasion scenario tests
-├── test_fixes.py             # Feature verification tests
 ├── requirements.txt           # Project dependencies
 ├── db/
 │   └── neon.py               # Database connection

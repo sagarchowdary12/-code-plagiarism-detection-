@@ -10,7 +10,6 @@ plagiarism-service/
 ├── 📄 main.py                    # FastAPI REST API server (START HERE)
 ├── 📄 demo_for_team_leader.py    # Main demonstration script
 ├── 📄 test_complex_evasion.py    # Evasion scenario tests
-├── 📄 test_fixes.py             # Feature verification tests
 │
 ├── 📁 models/                    # API request/response schemas
 │   └── schemas.py
