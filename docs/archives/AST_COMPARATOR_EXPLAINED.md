@@ -219,27 +219,24 @@ In our final architecture, we replaced direct set comparison with **Ordered Stru
 Instead of unique types, we now compare **structural fingerprints**.
 
 ```python
-# FIX 3: Implementation
 def ast_similarity_percent(code_a: str, code_b: str, language: str = 'python') -> float:
-    # 1. Extract structural nodes
     nodes_a = get_structural_tokens(code_a, language)
     nodes_b = get_structural_tokens(code_b, language)
-    
+
     if not nodes_a or not nodes_b:
         return 0.0
-    
-    # 2. Use winnowing fingerprints (Fix 3)
+
+    # FIX 3: Use winnowing fingerprints instead of unordered set extraction.
     # This mathematically preserves code ordering, repetition, and depth.
     set_a = winnowing_ast(nodes_a)
     set_b = winnowing_ast(nodes_b)
-    
-    # 3. Calculate similarity
+
     intersection = set_a & set_b
     union = set_a | set_b
-    
+
     if not union:
         return 0.0
-    
+
     score = (len(intersection) / len(union)) * 100
     return float(round(score, 2))
 ```

@@ -1,5 +1,5 @@
 # Winnowing: Step-by-Step Calculation
-## From 18 K-grams to 6 Fingerprints
+## From 16 K-grams to 6 Fingerprints (Final V3 Dual-Shield)
 
 ---
 
@@ -135,7 +135,7 @@ kg14 = ('VAR', 'VAR', '=', 'VAR', 'return')
 kg15 = ('VAR', '=', 'VAR', 'return', 'VAR')
 ```
 
-**Total K-grams**: 20 - 5 + 1 = **16 k-grams** (not 18, I'll correct this)
+**Total K-grams**: 20 - 5 + 1 = **16 k-grams**
 
 ---
 
@@ -533,3 +533,34 @@ fingerprints ≈ 16 / 4 = 4-6 (depends on hash distribution)
 ```
 
 This is why winnowing is the gold standard for document fingerprinting!
+
+---
+
+## Part 2: Structural Winnowing (AST Nodes)
+
+**New in V3 (Fix 3)**: We now apply the exact same mathematical process shown above to the **AST node sequence**.
+
+### 1. Extract Nodes
+Instead of tokens, we extract structural node types.
+```
+Original: [FunctionDef, Assign, Assign, For, If, AugAssign, Return]
+```
+
+### 2. K-gram Generation (k=3)
+We slide a window of size 3 over these nodes:
+```
+kg0: (FunctionDef, Assign, Assign)
+kg1: (Assign, Assign, For)
+kg2: (Assign, For, If)
+...
+```
+
+### 3. Hash & Winnow
+We hash these structural k-grams and select the minimums.
+
+### Why do this for AST?
+This catches **structural reordering**. If a student moves an `if` block above an `assign` block, the AST k-grams will change. Without winnowing, simple set matching wouldn't notice the change—but winnowing catches it!
+
+**Result**: We now have two independent winnowing shields:
+- **Token Winnowing**: Catches renamed and "noisy" code.
+- **AST Winnowing**: Catches "smart" structural mutations and reordering.

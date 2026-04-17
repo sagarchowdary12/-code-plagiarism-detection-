@@ -112,18 +112,58 @@ from itertools import combinations
 
 def compare_all_submissions(submissions: list) -> list:
     results = []
-    
-    # Generate all pairs
+
+    if not submissions:
+        return results
+
+    question_id = submissions[0]["question_id"]
+    language = submissions[0]["language"]
+
+    # Compare every pair (but skip comparing a submission to itself)
     for sub_a, sub_b in combinations(submissions, 2):
-        # Skip if same candidate (shouldn't happen, but safety check)
+        # Skip if it's literally the same submission (same candidate_id)
         if sub_a["candidate_id"] == sub_b["candidate_id"]:
             continue
-        
-        # Compare this pair
-        result = compare_pair(sub_a, sub_b)
-        if result:
-            results.append(result)
-    
+
+        code_a = sub_a["source_code"]
+        code_b = sub_b["source_code"]
+
+        # Skip if either code's normalized tokens are too short
+        if get_token_count(code_a, language) < MIN_TOKEN_LENGTH:
+            continue
+        if get_token_count(code_b, language) < MIN_TOKEN_LENGTH:
+            continue
+
+        # Get token similarity percentage
+        tok_pct = token_similarity_percent(code_a, code_b, language)
+
+        # FIX 2: Compute AST similarity for ALL pairs.
+        # Removing the previous early 'continue' allows us to catch smart
+        # rewrites where token similarity is low but structure is identical.
+        ast_pct = ast_similarity_percent(code_a, code_b, language)
+
+        # FIX 2: Hybrid decision rule.
+        # Either token >= 25% or AST >= 40% independently flags the result.
+        # We only drop the pair if BOTH are considered noise.
+        if tok_pct < MIN_TOKEN_REPORT_PCT and ast_pct < MIN_AST_REPORT_PCT:
+            continue
+
+        # Get human readable label
+        label = get_label(tok_pct, ast_pct)
+
+        results.append({
+            "candidate_a":          sub_a["candidate_id"],
+            "candidate_b":          sub_b["candidate_id"],
+            "question_id":          question_id,
+            "language":             language,
+            "token_similarity_pct": tok_pct,
+            "ast_similarity_pct":   ast_pct,
+            "label":                label,
+        })
+
+    # Sort by token similarity — highest first so worst cases appear at top
+    results.sort(key=lambda x: x["token_similarity_pct"], reverse=True)
+
     return results
 ```
 
@@ -251,32 +291,34 @@ tok_pct = 15.0, ast_pct = 20.0  # Both too low; considered noise.
 ### The Label Engine (V3)
 
 ```python
+# The Label Engine (The most important logic in the whole app!)
 def get_label(token_pct: float, ast_pct: float) -> str:
-    # 1. Exact Structural and Textual match
+    # Exactly identical text and logic
     if token_pct == 100 and ast_pct == 100:
         return "Exact match"
 
-    # 2. Very high text overlap
+    # Token very high — obvious copy with tiny changes
     if token_pct >= 90:
         return "Near-identical text"
 
-    # 3. High text overlap
+    # Token high — clearly copied with some renaming
     if token_pct >= 75:
         return "High token overlap"
 
-    # 4. SMART COPY: Very different text, but identical logic (V3 Hallmark)
+    # HUGE: Text is very different (under 75 words match), but the underlying Blueprint is almost perfectly identical (over 95)!
+    # This means student rewrote the surface but kept exact same logic. This is deliberate smart plagiarism — worst kind
     if token_pct < 75 and ast_pct >= 95:
         return "Low text overlap, high structural similarity"
 
-    # 5. Hybrid match
+    # Suspicious logic overlap (Token is generic, but structural skeleton matches heavily)
     if token_pct >= 50 and ast_pct >= 75:
         return "Moderate similarity — structural and textual"
 
-    # 6. Moderate text match
+    # Token moderate (Generic text overlap, logic wasn't strong enough to hit trap above)
     if token_pct >= 50:
         return "Moderate text similarity"
 
-    # 7. Low signals
+    # Token low but AST moderate — slightly suspicious
     if token_pct >= 25 and ast_pct >= 50:
         return "Slight text similarity"
 

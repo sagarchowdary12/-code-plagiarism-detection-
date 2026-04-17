@@ -46,6 +46,8 @@ plagiarism-service/
 │   ├── tokenizer.py            # Tokenization & Winnowing
 │   ├── ast_comparator.py       # AST Structural Winnowing (Fix 3)
 │   └── scorer.py               # Hybrid Scoring & Neutral Labeling (Fix 5)
+├── db/
+│   └── neon.py                 # Neon Serverless Database Logic
 ├── models/
 │   └── schemas.py              # Schema for label-based metrics (Fix 4)
 └── demo_for_team_leader.py      # New Comprehensive Demo Script
@@ -116,19 +118,29 @@ Returns metrics derived from the new **Fix 4** summary logic.
 ```json
 {
   "batch_id": "batch_005",
+  "total_submissions": 20,
+  "total_pairs_checked": 190,
   "summary_by_question": [
     {
       "question_id": "matrix_multiply",
+      "total_pairs_checked": 45,
       "exact_match": 2,
-      "low_text_high_structure": 1,
+      "near_identical_text": 1,
       "high_token_overlap": 4,
-      "likely_original": 43
+      "low_text_high_structure": 1,
+      "moderate_structural_textual": 2,
+      "moderate_text_similarity": 5,
+      "slight_text_similarity": 10
     }
   ],
   "results": [
     {
       "candidate_a": "alice_dev",
       "candidate_b": "bob_enterprise",
+      "question_id": "matrix_multiply",
+      "language": "python",
+      "token_similarity_pct": 12.5,
+      "ast_similarity_pct": 98.4,
       "label": "Low text overlap, high structural similarity"
     }
   ]
