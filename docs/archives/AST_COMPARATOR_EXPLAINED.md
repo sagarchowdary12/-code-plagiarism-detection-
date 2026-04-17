@@ -8,7 +8,7 @@ The AST (Abstract Syntax Tree) comparator is the second engine in our dual-detec
 ## The Complete Pipeline
 
 ```
-Raw Code → Parse to AST → Extract Structural Nodes → Filter Non-Structural → Compare Sets → Similarity Score
+Raw Code → Parse to AST → Extract Structural Nodes → Filter Non-Structural → Ordered Structural Hashing (Winnowing) → Similarity Score
 ```
 
 Let's walk through each step with examples.
@@ -200,80 +200,40 @@ The `Call` nodes from `print()` statements are filtered out, so both codes have 
 
 ---
 
-## Step 4: Compare Using Set Similarity
+## Step 4: Compare Using Ordered Structural Hashing (Winnowing)
 
 **Function**: `ast_similarity_percent()`
 
-**Purpose**: Compare the unique structural node types using Jaccard similarity.
+**Purpose**: Compare the structural node sequence using winnowing fingerprints to preserve the logical "flow" of the program.
 
-**Why Set Comparison (Not Winnowing)?**
+**Why Winnowing (Fix 3)?**
 
-For AST, we use **direct set comparison** instead of winnowing because:
+In our final architecture, we replaced direct set comparison with **Ordered Structural Hashing**. This was done because:
 
-1. **AST nodes are already abstract** - They represent structure, not sequence
-2. **Order matters less** - We care about WHAT structures exist, not their exact sequence
-3. **Smaller node sets** - AST has fewer nodes than tokens, so set comparison is fast
-4. **More robust** - Set comparison is immune to node reordering
+1. **Order Matters**: Set matching could be bypassed by students reordering code blocks. Winnowing preserves the sequence of logic.
+2. **Repetition Matters**: A code with 10 `if` statements is more complex than one with 1. Winnowing catches the "density" of logic better than sets.
+3. **Robustness**: Like the tokenizer, winnowing in AST makes the comparison resistant to small "structural noise" injections.
 
-### Jaccard Similarity Formula:
-```
-similarity = |A ∩ B| / |A ∪ B|
-```
+### Comparison Logic:
 
-Where:
-- A = Set of unique node types in code A
-- B = Set of unique node types in code B
-- A ∩ B = Common node types (intersection)
-- A ∪ B = All unique node types (union)
-
-### Example:
-
-**Student A nodes**:
-```
-['Module', 'FunctionDef', 'For', 'If', 'Compare', 'BinOp', 'Return', 'Return']
-```
-
-**Student A unique set**:
-```
-{'Module', 'FunctionDef', 'For', 'If', 'Compare', 'BinOp', 'Return'}
-```
-(7 unique types)
-
-**Student B nodes** (with dummy prints filtered):
-```
-['Module', 'FunctionDef', 'For', 'If', 'Compare', 'BinOp', 'Return', 'Return']
-```
-
-**Student B unique set**:
-```
-{'Module', 'FunctionDef', 'For', 'If', 'Compare', 'BinOp', 'Return'}
-```
-(7 unique types)
-
-**Comparison**:
-```
-Intersection: {'Module', 'FunctionDef', 'For', 'If', 'Compare', 'BinOp', 'Return'}
-Union: {'Module', 'FunctionDef', 'For', 'If', 'Compare', 'BinOp', 'Return'}
-
-Similarity = 7 / 7 = 100%
-```
-
-### Implementation:
+Instead of unique types, we now compare **structural fingerprints**.
 
 ```python
+# FIX 3: Implementation
 def ast_similarity_percent(code_a: str, code_b: str, language: str = 'python') -> float:
-    # Extract structural nodes
+    # 1. Extract structural nodes
     nodes_a = get_structural_tokens(code_a, language)
     nodes_b = get_structural_tokens(code_b, language)
     
     if not nodes_a or not nodes_b:
         return 0.0
     
-    # Convert to sets (unique node types)
-    set_a = set(nodes_a)
-    set_b = set(nodes_b)
+    # 2. Use winnowing fingerprints (Fix 3)
+    # This mathematically preserves code ordering, repetition, and depth.
+    set_a = winnowing_ast(nodes_a)
+    set_b = winnowing_ast(nodes_b)
     
-    # Calculate Jaccard similarity
+    # 3. Calculate similarity
     intersection = set_a & set_b
     union = set_a | set_b
     
@@ -281,7 +241,7 @@ def ast_similarity_percent(code_a: str, code_b: str, language: str = 'python') -
         return 0.0
     
     score = (len(intersection) / len(union)) * 100
-    return round(score, 2)
+    return float(round(score, 2))
 ```
 
 ---
@@ -579,34 +539,17 @@ Similarity: 7/7 = 100%
 
 ---
 
-## Why We Don't Use Winnowing for AST
+## Why We Use Winnowing for Both Engines (Fix 3)
 
-**Question**: The tokenizer uses winnowing. Why doesn't AST?
+**Question**: The tokenizer and AST both use winnowing. Why?
 
-**Answer**: Different data characteristics require different algorithms.
+**Answer**: While they represent different data (tokens vs. tree nodes), they share a common requirement: **Detection must be robust against local gaps and reordering.**
 
-### Tokens:
-- **Many tokens** (100-1000+ per file)
-- **Sequence matters** (order of operations)
-- **Need dimensionality reduction** (winnowing reduces 1000 tokens → 250 fingerprints)
-- **Sensitive to insertions** (dummy code shifts sequences)
+### Hybrid Advantage:
+- **Tokenizer Winnowing**: Catches textual similarity (verbatim copying).
+- **AST Winnowing**: Catches structural similarity (logic copying).
 
-### AST Nodes:
-- **Few unique types** (5-20 per file)
-- **Existence matters more than sequence** (we care WHAT structures are used)
-- **Already small** (no need for reduction)
-- **Set comparison is robust** (immune to reordering)
-
-**Example**:
-```python
-# Code with 50 tokens
-tokens = ['def', 'VAR', 'VAR', 'VAR', '=', 'VAR', ...]  # 50 items
-fingerprints = winnowing(tokens)  # Reduces to ~12 fingerprints
-
-# Same code's AST
-ast_nodes = ['Module', 'FunctionDef', 'Assign', 'For', 'If', 'Return']  # 6 unique types
-# No need for winnowing - already small!
-```
+By using winnowing for both, we ensure that adding "junk" (whether it's print statements or dummy logic blocks) doesn't break the mathematical fingerprint of the student's solution.
 
 ---
 

@@ -411,7 +411,7 @@ Based on your demo cases:
    - Handles: Dummy code insertion, reordering
    - Effect: Selects stable fingerprints
 
-**Together**: They create a system that's both accurate (catches renamed copies) and robust (handles insertions).
+**In our V3 Architecture, we use Winnowing on BOTH engines (Tokens and AST).** This creates a "Dual-Winnowing" shield that is extremely difficult for students to bypass.
 
 **Without either one**: You'd miss a huge percentage of plagiarism.
 
@@ -422,13 +422,13 @@ Based on your demo cases:
 ## Your System's Strength
 
 By combining:
-- Normalization (from your original approach)
-- Winnowing (your improvement)
-- AST analysis (second engine)
+- Normalization (handles renamed variables)
+- Token-Winnowing (handles textual noise)
+- AST-Winnowing (Fix 3: handles structural noise & reordering)
 
-You have a THREE-LAYER defense:
+You have a **TRIPLE-LAYER** defense:
 1. Token-based with normalization (catches renamed copies)
-2. Token-based with winnowing (handles insertions)
-3. AST-based (catches structural plagiarism)
+2. Token-based with winnowing (handles textual noise injection)
+3. AST-based with winnowing (catches structural "Smart Plagiarism")
 
-This is MORE robust than most commercial plagiarism detectors!
+This "Dual-Winnowing" approach is MORE robust than most commercial plagiarism detectors!

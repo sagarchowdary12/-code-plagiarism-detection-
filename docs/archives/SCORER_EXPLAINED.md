@@ -190,114 +190,98 @@ tok_pct = 100.0  # Normalization catches renamed variables
 
 ---
 
-## Step 6: Calculate AST Similarity
+## Step 6: Calculate AST Similarity (Independent Pipeline)
 
 **Function**: `ast_similarity_percent()`
 
-**Purpose**: Get similarity score from AST-based engine.
+**Purpose**: Get similarity score from the structural AST-based engine.
 
-**Optimization**: If token similarity is already ≥95%, skip AST parsing (it's expensive) and just use the token score.
+**Fix 2: Independent Pipelines**: In our final architecture, we **removed the short-circuit optimization** that skipped AST parsing. 
 
-**Why?** If tokens are 95%+ similar, AST will also be very high. No need to waste CPU.
+**Why?** Previously, if token similarity was very high, we assumed AST was also high. However, we found that for "Smart copies," students would inject noise to lower the token score. By making the AST engine **Always-Active**, we ensure that we never miss a structural match even if the surface text is heavily modified.
 
 ```python
 from detection.ast_comparator import ast_similarity_percent
 
-# Short-circuit optimization
-if tok_pct >= 95:
-    ast_pct = tok_pct  # Assume AST is also high
-else:
-    ast_pct = ast_similarity_percent(code_a, code_b, language)
-```
-
-**Example**:
-```python
-# Exact copy
-tok_pct = 100.0
-ast_pct = 100.0  # Just use token score, skip AST parsing
-
-# Different code
-tok_pct = 57.14
-ast_pct = 100.0  # Need to calculate AST (might be high despite low token)
+# FIX 2: Compute AST similarity for ALL pairs.
+# This ensures that even "hidden" structural copies are caught.
+ast_pct = ast_similarity_percent(code_a, code_b, language)
 ```
 
 ---
 
-## Step 7: Filter by Minimum Threshold
+## Step 7: Filter by Hybrid Threshold Rule (Fix 2)
 
-**Purpose**: Only report pairs with token similarity ≥ 25%.
+**Purpose**: Only report pairs that show a significant signal from **at least one** engine.
 
-**Threshold**: `MINIMUM_REPORT_PERCENT = 25.0`
+**Thresholds**:
+- `MIN_TOKEN_REPORT_PCT = 25.0`
+- `MIN_AST_REPORT_PCT = 40.0`
 
-**Why?** Below 25%, the code is too different to be plagiarism. This filters out noise and reduces false positives.
+**Why?** In the previous architecture, we only looked at tokens. Now, the system uses a **Hybrid Decision Rule**. A pair is only dropped if **BOTH** signals are below these minimums. If either signal is high, the pair is flagged for review.
 
 ```python
-MINIMUM_REPORT_PERCENT = 25.0
-
-# In compare_all_submissions:
-if tok_pct < MINIMUM_REPORT_PERCENT:
-    continue  # Don't report this pair
+# FIX 2: Hybrid decision rule.
+# Either token >= 25% or AST >= 40% independently flags the result.
+# We only drop the pair if BOTH are considered noise.
+if tok_pct < MIN_TOKEN_REPORT_PCT and ast_pct < MIN_AST_REPORT_PCT:
+    continue
 ```
 
 **Example**:
 ```python
 # Report these
-tok_pct = 100.0  # Exact copy
-tok_pct = 75.0   # Highly similar
-tok_pct = 50.0   # Moderately similar
-tok_pct = 25.0   # Slightly similar (just at threshold)
+tok_pct = 10.0, ast_pct = 80.0  # High AST flags it!
+tok_pct = 30.0, ast_pct = 10.0  # High Tokens flags it!
 
 # Don't report these
-tok_pct = 24.9   # Too different
-tok_pct = 10.0   # Completely different
-tok_pct = 0.0    # No similarity
+tok_pct = 15.0, ast_pct = 20.0  # Both too low; considered noise.
 ```
 
 ---
 
-## Step 8: Assign Risk Label
+## Step 8: Assign Neutral Signal Label (Fix 5)
 
 **Function**: `get_label()`
 
-**Purpose**: Convert numeric scores into human-readable risk labels.
+**Purpose**: Convert numeric scores into professional, evidence-based "Signal Labels".
 
-This is the MOST IMPORTANT logic in the entire system!
+**Fix 5: Neutral Recalibration**: We replaced traditional risk labels (like "Plagiarism") with objective, evidentiary terminology. This protects the organization legally while providing clear indicators for review.
 
-### The Label Engine
+### The Label Engine (V3)
 
 ```python
 def get_label(token_pct: float, ast_pct: float) -> str:
-    # Rule 1: Exactly identical
+    # 1. Exact Structural and Textual match
     if token_pct == 100 and ast_pct == 100:
-        return "Exact copy"
-    
-    # Rule 2: Token very high (90%+)
+        return "Exact match"
+
+    # 2. Very high text overlap
     if token_pct >= 90:
-        return "Almost identical"
-    
-    # Rule 3: Token high (75-89%)
+        return "Near-identical text"
+
+    # 3. High text overlap
     if token_pct >= 75:
-        return "Highly similar"
-    
-    # Rule 4: SMART PLAGIARISM - Low token but very high AST
-    # This is the WORST kind - student rewrote surface but kept exact logic
+        return "High token overlap"
+
+    # 4. SMART COPY: Very different text, but identical logic (V3 Hallmark)
     if token_pct < 75 and ast_pct >= 95:
-        return "Smart copy — logic identical"
-    
-    # Rule 5: Suspicious - Both moderate-high
+        return "Low text overlap, high structural similarity"
+
+    # 5. Hybrid match
     if token_pct >= 50 and ast_pct >= 75:
-        return "Suspicious — high structural overlap"
-    
-    # Rule 6: Token moderate (50%+)
+        return "Moderate similarity — structural and textual"
+
+    # 6. Moderate text match
     if token_pct >= 50:
-        return "Moderately similar"
-    
-    # Rule 7: Token low but AST moderate
+        return "Moderate text similarity"
+
+    # 7. Low signals
     if token_pct >= 25 and ast_pct >= 50:
-        return "Slightly similar"
-    
-    # Rule 8: Below all thresholds
+        return "Slight text similarity"
+
     return "Likely original"
+```
 ```
 
 ### Label Decision Tree

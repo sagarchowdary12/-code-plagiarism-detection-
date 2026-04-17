@@ -47,17 +47,20 @@ def clean_code_from_db(source_code: str) -> str:
 ```
 
 ---
-## Step 2: Remove Comments Using Tree-Sitter
-Function**: `remove_comments_universally()`
+## Step 2: Remove Comments & Strict Token Gating (Fix 6)
 
-**Purpose**: Comments are noise. Students often change comments to hide plagiarism. We remove them completely.
+**Function**: `remove_comments_universally()`
 
-**Why Tree-Sitter for comment removal?**
-- Regex-based comment removal fails on edge cases (strings containing `//`, nested comments, etc.)
-- Tree-sitter can accurately identify what is a comment vs what is code
-- We're NOT doing full AST analysis here - just using the parser to find comments
+**Purpose**: Comments are not just noise—they can be used to bypass plagiarism detection systems. We remove them completely to ensure the system analyzes only the actual logic.
 
-**Note**: This is different from the AST-based detection engine. Here we're only using Tree-sitter to clean the code. The actual AST structural analysis happens separately in `ast_comparator.py`.
+**Fix 6: Strict Token Gating**: Previously, students could "inject noise" by adding thousands of lines of comments. This would trick the system into thinking a submission was a large project, effectively "diluting" the copied code percentage. 
+
+In our final architecture, we perform **Strict Gating**. We strip ALL comments **before** calculating the token length or any similarity metrics. This ensures that a 100-line copied file cannot hide inside a 2000-line file of junk comments.
+
+**Why Tree-Sitter for Fix 6?**
+- Regex-based removal is unreliable.
+- Tree-sitter guarantees that only actual `comment` nodes are removed.
+- Allows for accurate "net code" measurement.
 
 **How it works**:
 1. Parse code using Tree-sitter (lightweight parsing, just to find comments)
