@@ -142,8 +142,17 @@ def get_python_ast_nodes(source_code: str) -> list:
         # NOTE: 'Call' is intentionally excluded!
     }
     
-    return [type(node).__name__ for node in ast.walk(tree) 
-            if type(node).__name__ in structural_types]
+    nodes = []
+    
+    def walk(node):
+        name = type(node).__name__
+        if name in structural_types:
+            nodes.append(name)
+        for child in ast.iter_child_nodes(node):
+            walk(child)
+            
+    walk(tree)
+    return nodes
 ```
 
 ---
@@ -465,7 +474,7 @@ Student B (Expr and Call nodes filtered):
 **Step 3: Apply Winnowing Fingerprints (FIX 3)**
 
 Instead of collapsing to an unordered set, we run `winnowing_ast()` on the ordered node list:
-- Splits into overlapping k-grams (k=3) of consecutive node types
+- Splits into overlapping k-grams (k=6) of consecutive node types
 - Hashes each k-gram using MD5
 - Selects minimum hash in each sliding window (window=4)
 - Result: a **set of fingerprints** that encodes both order and frequency
@@ -601,7 +610,12 @@ AST and token-based engines work together:
 ```python
 import ast
 tree = ast.parse(code)
-nodes = [type(node).__name__ for node in ast.walk(tree)]
+# Using DFS to preserve node ordering
+nodes = []
+def walk(n):
+    nodes.append(type(n).__name__)
+    for c in ast.iter_child_nodes(n): walk(c)
+walk(tree)
 ```
 
 ### 2. Tree-Sitter

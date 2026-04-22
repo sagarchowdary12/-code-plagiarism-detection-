@@ -1,6 +1,7 @@
 import ast
 import codecs
 import hashlib
+from functools import lru_cache
 
 # ─────────────────────────────────────────
 # TREE-SITTER UNIVERSAL IMPORTS
@@ -168,18 +169,19 @@ def get_tree_sitter_nodes(source_code: str, lang_module) -> list:
 # ─────────────────────────────────────────
 
 
-def get_structural_tokens(source_code: str, language: str) -> list:
+@lru_cache(maxsize=10000)
+def get_structural_tokens(source_code: str, language: str) -> tuple:
     lang = language.lower().strip()
 
     if lang == 'python':
-        return get_python_ast_nodes(source_code)
+        return tuple(get_python_ast_nodes(source_code))
 
     module = LANGUAGE_REGISTRY.get(lang)
     if module:
-        return get_tree_sitter_nodes(source_code, module)
+        return tuple(get_tree_sitter_nodes(source_code, module))
 
     print(f"[AST] Unsupported language '{language}'")
-    return []
+    return tuple()
 
 # ─────────────────────────────────────────
 # WINNOWING (AST)
@@ -190,7 +192,7 @@ def hash_kgram(kgram: tuple) -> int:
     return int(hashlib.md5(' '.join(kgram).encode()).hexdigest(), 16)
 
 
-def winnowing_ast(nodes: list, k: int = 3, window_size: int = 4) -> set:
+def winnowing_ast(nodes: list, k: int = 6, window_size: int = 4) -> set:
     if not nodes:
         return set()
 

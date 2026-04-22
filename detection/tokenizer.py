@@ -1,6 +1,7 @@
 import re
 import codecs
 import hashlib
+from functools import lru_cache
 from typing import List
 from tree_sitter import Language, Parser
 from detection.ast_comparator import LANGUAGE_REGISTRY
@@ -106,10 +107,11 @@ def normalize_code(source_code: str, language: str = 'python') -> str:
 # ─────────────────────────────────────────
 
 
-def tokenize(source_code: str, language: str = 'python') -> List[str]:
+@lru_cache(maxsize=10000)
+def tokenize(source_code: str, language: str = 'python') -> tuple:
     normalized = normalize_code(source_code, language)
     # Filter out empty strings from split
-    return [t for t in normalized.split() if t]
+    return tuple([t for t in normalized.split() if t])
 
 # ─────────────────────────────────────────
 # ORIGINAL K-GRAM (optional - kept for hybrid use)
@@ -133,7 +135,7 @@ def hash_kgram(kgram: tuple) -> int:
     return int(hashlib.md5(kgram_str.encode()).hexdigest(), 16)
 
 
-def winnowing(tokens: List[str], k: int = 5, window_size: int = 4) -> set:
+def winnowing(tokens: List[str], k: int = 12, window_size: int = 4) -> set:
     if len(tokens) < k:
         return set()
 

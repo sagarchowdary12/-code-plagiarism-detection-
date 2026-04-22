@@ -260,7 +260,7 @@ def tokenize(source_code: str, language: str = 'python') -> List[str]:
 
 **Step 5.1: Create K-grams**
 
-A k-gram is a sequence of k consecutive tokens. We use k=5.
+A k-gram is a sequence of k consecutive tokens. We use k=12 in production, but we will use k=5 here for simplicity.
 
 **Example**:
 ```python
@@ -313,7 +313,7 @@ Fingerprint: {h2, h3, h5}
 
 **Full Implementation**:
 ```python
-def winnowing(tokens: List[str], k: int = 5, window_size: int = 4) -> set:
+def winnowing(tokens: List[str], k: int = 12, window_size: int = 4) -> set:
     if len(tokens) < k:
         return set()
     
@@ -509,7 +509,7 @@ def VAR VAR VAR VAR = VAR + VAR return VAR
 ['def', 'VAR', 'VAR', 'VAR', 'VAR', '=', 'VAR', '+', 'VAR', 'return', 'VAR']
 ```
 
-**Step 5: Winnowing (k=5, window=4)**
+**Step 5: Winnowing (k=5, window=4) (Note: Production uses k=12)**
 ```python
 # K-grams (same for both)
 1. ('def', 'VAR', 'VAR', 'VAR', 'VAR')
@@ -544,10 +544,10 @@ Similarity: 4/4 = 100%
 
 ## Key Parameters
 
-### K-gram Size (k=5)
-- **Too small (k=2)**: Too many false positives (common patterns match)
-- **Too large (k=10)**: Misses short copied segments
-- **k=5**: Good balance, industry standard
+### K-gram Size (k=12)
+- **Too small (k=5)**: Too many false positives on generic loop structures
+- **Too large (k=20)**: Misses short copied segments
+- **k=12**: Good balance for fierce structural uniqueness
 
 ### Window Size (window=4)
 - **Too small (window=2)**: Too many fingerprints, slow comparison

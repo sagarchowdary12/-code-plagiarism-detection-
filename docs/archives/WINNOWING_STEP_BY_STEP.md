@@ -81,6 +81,9 @@ Total: 20 tokens
 
 ## Step 3: K-gram Generation (k=5)
 
+> [!NOTE]
+> The production system uses `k=12` for Tokens and `k=6` for AST to fiercely reduce cross-approach false positives on short algorithms, but this mathematical walkthrough uses `k=5` for simplicity.
+
 ### Generate ALL Overlapping K-grams
 
 A k-gram is a sequence of k=5 consecutive tokens.
