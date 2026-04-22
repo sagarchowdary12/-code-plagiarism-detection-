@@ -26,7 +26,7 @@ Let's walk through each step with examples.
 # From database
 "def add(a, b):\\n    return a + b"
 
-# After cleaning
+# After cleaning 
 "def add(a, b):
     return a + b"
 ```

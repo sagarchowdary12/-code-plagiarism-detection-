@@ -44,43 +44,53 @@ submissions = [
 
 ---
 
-## Step 2: Group by Question
+## Step 2: Group by Question + Language
 
 **Function**: `run_plagiarism_check()`
 
-**Purpose**: Group submissions by question_id so we only compare submissions for the same question.
+**Purpose**: Group submissions by `(question_id, language)` so we only compare submissions for the **same question answered in the same language**.
 
-**Why?** Students solving different questions will have different code - that's not plagiarism!
+**Why the composite key?** FIX 1 — Grouping only by `question_id` would silently compare a Python submission against a Java submission using the wrong parser, producing meaningless similarity scores. Adding `language` as a second key guarantees every comparison is always parser-correct.
 
 ```python
 def run_plagiarism_check(all_submissions: list) -> list:
-    # Group submissions by question_id
+    # FIX 1: Group by (question_id, language) — not just question_id.
+    # This prevents cross-language submissions from being silently compared
+    # using the wrong parser, which produces meaningless similarity scores.
     groups = defaultdict(list)
     for submission in all_submissions:
-        groups[submission["question_id"]].append(submission)
-    
-    # Process each group separately
+        key = (submission["question_id"], submission["language"].lower().strip())
+        groups[key].append(submission)
+
     all_results = []
-    for question_id, group in sorted(groups.items()):
+    for (question_id, language), group in sorted(groups.items()):
         if len(group) < 2:
             continue  # Need at least 2 submissions to compare
-        
+
+        total_pairs = len(group) * (len(group) - 1) // 2
+        print(f"  Checking {question_id} [{language}] — "
+              f"{len(group)} submissions — "
+              f"{total_pairs} possible pairs")
+
         results = compare_all_submissions(group)
+        print(f"  Pairs worth reporting: {len(results)}")
         all_results.extend(results)
-    
+
     return all_results
 ```
 
 **Example**:
 ```python
-# Input: 3 submissions
-[alice_q1, bob_q1, charlie_q2]
+# Input: 3 submissions (mixed languages)
+[alice_q1_python, bob_q1_python, charlie_q1_java]
 
-# After grouping
+# After grouping by (question_id, language)
 {
-    "q1_sum": [alice_q1, bob_q1],      # 2 submissions → 1 pair
-    "q2_max": [charlie_q2]              # 1 submission → skip
+    ("q1_sum", "python"): [alice_q1_python, bob_q1_python],  # 2 submissions → 1 pair
+    ("q1_sum", "java"):   [charlie_q1_java]                  # 1 submission → skip
 }
+
+# charlie is NOT compared against alice or bob — different language!
 ```
 
 ---
@@ -180,24 +190,27 @@ def compare_all_submissions(submissions: list) -> list:
 ```python
 MIN_TOKEN_LENGTH = 5
 
-def get_token_count(source_code: str) -> int:
-    cleaned = clean_code(source_code)
-    return len(cleaned.split())
+# FIX 6: Use the actual normalized tokens for gating, not just raw whitespace text.
+def get_token_count(source_code: str, language: str) -> int:
+    return len(tokenize(source_code, language))
 
 # In compare_all_submissions:
-if get_token_count(code_a) < MIN_TOKEN_LENGTH:
+if get_token_count(code_a, language) < MIN_TOKEN_LENGTH:
     continue  # Skip this pair
-if get_token_count(code_b) < MIN_TOKEN_LENGTH:
+if get_token_count(code_b, language) < MIN_TOKEN_LENGTH:
     continue  # Skip this pair
 ```
+
+> [!NOTE]
+> FIX 6: `get_token_count` now calls the real `tokenize()` engine (language-aware normalization + winnowing) instead of a plain whitespace split. This ensures gating uses the same token count that the similarity engines use, making the minimum-length check accurate and consistent.
 
 **Example**:
 ```python
 # Too short - skip
-"return a + b"  # 4 tokens
+"return a + b"  # 4 normalized tokens
 
 # Long enough - compare
-"def add(a, b):\n    return a + b"  # 8 tokens
+"def add(a, b):\n    return a + b"  # 8 normalized tokens
 ```
 
 ---
@@ -653,14 +666,15 @@ if tok_pct >= 95:
 ```
 **Benefit**: Saves expensive AST parsing for obvious copies
 
-### 4. Grouping by Question
+### 4. Grouping by Question + Language (FIX 1)
 ```python
-# Only compare submissions for same question
+# Only compare submissions for same question AND same language
 groups = defaultdict(list)
 for sub in submissions:
-    groups[sub["question_id"]].append(sub)
+    key = (sub["question_id"], sub["language"].lower().strip())
+    groups[key].append(sub)
 ```
-**Benefit**: Reduces unnecessary comparisons
+**Benefit**: Eliminates cross-language comparisons that would use the wrong parser and produce garbage similarity scores, while also reducing the total number of pairs checked
 
 ### Performance Impact:
 
@@ -869,10 +883,10 @@ Group similar submissions together:
 ## Conclusion
 
 The scorer is the orchestration layer that:
-- **Groups submissions** by question
+- **Groups submissions** by `(question_id, language)` — ensuring only same-question, same-language pairs are ever compared
 - **Generates all pairs** to compare
-- **Filters** short code and low similarity
-- **Runs both engines** (token + AST)
+- **Filters** short code (FIX 6: language-aware token gating) and low similarity
+- **Runs both engines** (token + AST) independently for every pair
 - **Assigns risk labels** based on dual scores
 - **Sorts and returns** structured results
 

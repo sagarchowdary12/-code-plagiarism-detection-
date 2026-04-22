@@ -1,4 +1,7 @@
-from detection.scorer import run_plagiarism_check
+from detection.ast_comparator import ast_similarity_percent
+from detection.tokenizer import token_similarity_percent
+from detection.scorer import run_plagiarism_check, get_label
+
 
 def print_header(title):
     print(f"\n{'='*80}")
@@ -9,6 +12,7 @@ def print_header(title):
 # TEST CASE 1: OBNOXIOUS OBFUSCATION (Python)
 # ==========================================
 # Student adds massive strings, fake logging, and crazy variable names to trick the Tokenizer
+
 
 case1_a = """
 def calculate_prime(limit):
@@ -137,18 +141,22 @@ public int calculateHeaviest(int[] raw_data) {
 """
 
 submissions = [
-    {"candidate_id": "Student_A_Original", "question_id": "q1", "language": "python", "source_code": case1_a},
-    {"candidate_id": "Student_B_Obfuscation", "question_id": "q1", "language": "python", "source_code": case1_b},
-    
-    {"candidate_id": "Student_A_Original", "question_id": "q2", "language": "javascript", "source_code": case2_a},
-    {"candidate_id": "Student_B_ControlFlow", "question_id": "q2", "language": "javascript", "source_code": case2_b},
-    
-    {"candidate_id": "Student_A_Original", "question_id": "q3", "language": "java", "source_code": case3_a},
-    {"candidate_id": "Student_B_Chaos", "question_id": "q3", "language": "java", "source_code": case3_b},
+    {"candidate_id": "Student_A_Original", "question_id": "q1",
+        "language": "python", "source_code": case1_a},
+    {"candidate_id": "Student_B_Obfuscation", "question_id": "q1",
+        "language": "python", "source_code": case1_b},
+
+    {"candidate_id": "Student_A_Original", "question_id": "q2",
+        "language": "javascript", "source_code": case2_a},
+    {"candidate_id": "Student_B_ControlFlow", "question_id": "q2",
+        "language": "javascript", "source_code": case2_b},
+
+    {"candidate_id": "Student_A_Original", "question_id": "q3",
+        "language": "java", "source_code": case3_a},
+    {"candidate_id": "Student_B_Chaos", "question_id": "q3",
+        "language": "java", "source_code": case3_b},
 ]
 
-from detection.tokenizer import token_similarity_percent
-from detection.ast_comparator import ast_similarity_percent
 
 # ==========================================
 # TEST CASE 4: JS - SAME ALGO, NO HELPER FUNC
@@ -265,45 +273,57 @@ def get_repeated_elements(input_array)
 end
 """
 
+
 def run_evasion_tests():
     print_header("HACKER EVASION TEST STARTING")
-    
+
     pairs = [
-        ("Student_A_Original", "Student_B_Obfuscation",    "python",      case1_a, case1_b, "Obfuscation: crazy variable names + print spam"),
-        ("Student_A_Original", "Student_B_ControlFlow+Helper", "javascript", case2_a, case2_b, "Control Flow: FOR->WHILE + extracted helper function"),
-        ("Student_A_Original", "Student_B_Chaos",           "java",        case3_a, case3_b, "Noise Injection: try/catch + fake else + dead branches"),
-        ("Student_A_Original", "Student_B_ControlFlow_Clean","javascript",  case4_a, case4_b, "Control Flow: FOR->WHILE only, no helper"),
-        ("Student_A_Original", "Student_B_Unrolled",        "cpp",         case5_a, case5_b, "Loop Unrolling: binary search rewritten with bool flags"),
-        ("Student_A_Original", "Student_B_Iterative",       "python",      case6_a, case6_b, "Recursion->Iteration: completely different algorithm shape"),
-        ("Student_A_Original", "Student_B_Ruby",            "ruby",        case7_a, case7_b, "Ruby: identical logic, renamed everything"),
+        ("Student_A_Original", "Student_B_Obfuscation",    "python",
+         case1_a, case1_b, "Obfuscation: crazy variable names + print spam"),
+        ("Student_A_Original", "Student_B_ControlFlow+Helper", "javascript",
+         case2_a, case2_b, "Control Flow: FOR->WHILE + extracted helper function"),
+        ("Student_A_Original", "Student_B_Chaos",           "java",        case3_a,
+         case3_b, "Noise Injection: try/catch + fake else + dead branches"),
+        ("Student_A_Original", "Student_B_ControlFlow_Clean", "javascript",
+         case4_a, case4_b, "Control Flow: FOR->WHILE only, no helper"),
+        ("Student_A_Original", "Student_B_Unrolled",        "cpp",         case5_a,
+         case5_b, "Loop Unrolling: binary search rewritten with bool flags"),
+        ("Student_A_Original", "Student_B_Iterative",       "python",      case6_a,
+         case6_b, "Recursion->Iteration: completely different algorithm shape"),
+        ("Student_A_Original", "Student_B_Ruby",            "ruby",
+         case7_a, case7_b, "Ruby: identical logic, renamed everything"),
     ]
-    
+
     caught = 0
     evaded = 0
-    
+
     for a_name, b_name, lang, code_a, code_b, description in pairs:
         print(f"[{lang.upper()}] {description}")
         print(f"  {a_name} vs {b_name}")
-        
+
         tok_pct = token_similarity_percent(code_a, code_b, lang)
         ast_pct = ast_similarity_percent(code_a, code_b, lang)
-        
-        print(f"  Token: {tok_pct}%  |  AST: {ast_pct}%")
-        
-        if tok_pct < 25 and ast_pct < 40:
+
+        label = get_label(tok_pct, ast_pct)
+        print(f"  Token: {tok_pct}%  |  AST: {ast_pct}%  |  Label: '{label}'")
+
+        if label == "Likely original":
             print(f"  Result: EVADED (both signals too weak)\n")
             evaded += 1
         else:
             print(f"  Result: CAUGHT!\n")
             caught += 1
-    
+
     print("="*80)
-    print(f"  FINAL SCORE: {caught}/{ len(pairs)} evasions CAUGHT  |  {evaded} slipped through")
+    print(
+        f"  FINAL SCORE: {caught}/{len(pairs)} evasions CAUGHT  |  {evaded} slipped through")
     if evaded == 0:
         print("  PERFECT DETECTION - 100% catch rate!")
     else:
-        print(f"  {evaded} case(s) intentionally used fundamentally different algorithms (expected behaviour).")
+        print(
+            f"  {evaded} case(s) intentionally used fundamentally different algorithms (expected behaviour).")
     print("="*80)
+
 
 if __name__ == "__main__":
     run_evasion_tests()

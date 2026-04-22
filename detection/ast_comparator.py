@@ -146,7 +146,7 @@ def get_tree_sitter_nodes(source_code: str, lang_module) -> list:
     code = clean_code(source_code)
     try:
         lang = Language(lang_module.language())
-        parser = Parser(lang)
+        parser = Parser(lang) 
         tree = parser.parse(bytes(code, "utf8"))
 
         nodes = []

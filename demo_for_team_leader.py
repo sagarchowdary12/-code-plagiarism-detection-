@@ -213,7 +213,7 @@ print("""
 prog_flat = """
 def check_number(n):
     if n > 0:
-        return "positive"
+        return "positive" 
     if n < 0:
         return "negative"
     return "zero"
