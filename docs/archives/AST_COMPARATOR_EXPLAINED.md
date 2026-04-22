@@ -462,19 +462,27 @@ Student B (Expr and Call nodes filtered):
 ['Module', 'FunctionDef', 'Assign', 'Assign', 'For', 'If', 'AugAssign', 'Return']
 ```
 
-**Step 3: Convert to Sets**
+**Step 3: Apply Winnowing Fingerprints (FIX 3)**
 
-Both:
-```
-{'Module', 'FunctionDef', 'Assign', 'For', 'If', 'AugAssign', 'Return'}
+Instead of collapsing to an unordered set, we run `winnowing_ast()` on the ordered node list:
+- Splits into overlapping k-grams (k=3) of consecutive node types
+- Hashes each k-gram using MD5
+- Selects minimum hash in each sliding window (window=4)
+- Result: a **set of fingerprints** that encodes both order and frequency
+
+```python
+# FIX 3: Use winnowing fingerprints instead of unordered set extraction.
+# This mathematically preserves code ordering, repetition, and depth.
+set_a = winnowing_ast(nodes_a)  # fingerprint set
+set_b = winnowing_ast(nodes_b)  # fingerprint set
 ```
 
-**Step 4: Compare**
+**Step 4: Compare Fingerprints**
 
 ```
-Intersection: 7 node types
-Union: 7 node types
-Similarity: 7/7 = 100%
+Intersection: shared fingerprint hashes
+Union: all fingerprint hashes
+Similarity: len(intersection) / len(union) × 100
 ```
 
 **Result**: 100% AST similarity → Flagged as "Smart copy — logic identical"
@@ -530,9 +538,10 @@ Similarity: 7/7 = 100%
    ```
    These are semantically equivalent but structurally different.
 
-3. **Set comparison loses sequence info**: We only compare WHAT structures exist, not their ORDER. This is intentional (more robust), but means we can't detect reordering.
+3. **Generic patterns**: Very simple code (like `return a + b`) will have high AST similarity across all submissions. That's why we combine with token-based analysis.
 
-4. **Generic patterns**: Very simple code (like `return a + b`) will have high AST similarity across all submissions. That's why we combine with token-based analysis.
+> [!NOTE]
+> The previous limitation about "set comparison losing sequence info" was resolved by **FIX 3**, which replaced raw `set()` comparison with `winnowing_ast()` fingerprints. Ordering, repetition, and nesting depth are now all mathematically preserved.
 
 ---
 
@@ -625,10 +634,10 @@ pip install tree-sitter-javascript
 ## Conclusion
 
 The AST comparator provides a powerful second layer of plagiarism detection by:
-- **Parsing code into structural representation** using Tree-sitter
+- **Parsing code into structural representation** using Python `ast` (for Python) or Tree-sitter (for all other languages)
 - **Filtering to only structural nodes** (ignoring calls, names, constants)
-- **Comparing unique node type sets** using Jaccard similarity
-- **Catching "smart plagiarism"** where students add dummy code
+- **Comparing ordered winnowing fingerprints** (FIX 3) using Jaccard similarity — preserving node order, repetition, and nesting depth
+- **Catching "smart plagiarism"** where students add dummy code or rename variables
 
 Combined with token-based analysis, this dual-engine approach catches nearly all forms of code plagiarism while minimizing false positives.
 

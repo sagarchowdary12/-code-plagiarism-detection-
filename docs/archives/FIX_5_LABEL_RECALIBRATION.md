@@ -2,11 +2,12 @@
 
 ## Overview
 
-This document explains why Fix 5 is required, what the problem is with the current labels, and the changes we will apply.
+This document explains why Fix 5 was required, what the problem was with the original labels, and the changes applied.
 
-**File to be changed**: `detection/scorer.py` and `models/schemas.py`, plus updating `main.py`
+**Files changed**: `detection/scorer.py`, `models/schemas.py`, `main.py`  
 **Priority**: 🟡 Medium  
-**Raised by**: post-demo review
+**Raised by**: post-demo review  
+**Status**: ✅ Applied
 
 ---
 
@@ -49,13 +50,13 @@ We will update all the Python files to use the following new labels:
 | `Moderately similar` | `Moderate text similarity` *(I will add "text" for clarity)* |
 | `Slightly similar` | `Slight text similarity` *(I will add "text" for clarity)* |
 
-### How this affects the code:
-1. **`scorer.py`**: We will replace the string returns in the `get_label()` function with the new strings.
-2. **`models/schemas.py`**: We will rename the UI dashboard aggregate buckets (e.g. `smart_copies` will become `low_text_high_structure`).
-3. **`main.py`**: We will update the math calculation strings so `main.py` correctly counts the new labels (combining Fix 4 and Fix 5 seamlessly).
+### How this affected the code (applied changes):
+1. **`scorer.py`**: All string returns in `get_label()` were replaced with the new neutral labels.
+2. **`models/schemas.py`**: The `QuestionSummary` schema fields were renamed to match the new neutral labels (e.g., `smart_copies` → `low_text_high_structure`).
+3. **`main.py`**: The dashboard aggregation buckets were updated to count by the new label strings.
 
 ---
 
-## Review Required
+## Status: ✅ Complete
 
-Please take a look at the table of new labels above. If you agree with the new neutral wording, give me the thumbs up and I will apply the changes across the Python files!
+All three files have been updated. The new labels are live in production.
