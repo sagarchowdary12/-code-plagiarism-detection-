@@ -191,8 +191,13 @@ def hash_kgram(kgram: tuple) -> int:
 
 
 def winnowing_ast(nodes: list, k: int = 3, window_size: int = 4) -> set:
-    if len(nodes) < k:
+    if not nodes:
         return set()
+
+    # Fallback 1: Ultra-short code (less than k nodes).
+    # We can't even make one k-gram, so just fingerprint the whole sequence.
+    if len(nodes) < k:
+        return {hash_kgram(tuple(nodes))}
 
     hashes = []
     for i in range(len(nodes) - k + 1):
@@ -200,9 +205,16 @@ def winnowing_ast(nodes: list, k: int = 3, window_size: int = 4) -> set:
         hashes.append(hash_kgram(kgram))
 
     fingerprints = set()
-    for i in range(len(hashes) - window_size + 1):
-        window = hashes[i:i+window_size]
-        fingerprints.add(min(window))
+    
+    # Fallback 2: Short code. We have hashes, but not enough to slide the window.
+    # So we just use all the hashes we generated.
+    if len(hashes) < window_size:
+        fingerprints.update(hashes)
+    else:
+        # Standard Winnowing: minimum hash in each sliding window
+        for i in range(len(hashes) - window_size + 1):
+            window = hashes[i:i+window_size]
+            fingerprints.add(min(window))
 
     return fingerprints
 
