@@ -1,5 +1,5 @@
 # Winnowing: Step-by-Step Calculation
-## From 16 K-grams to 6 Fingerprints (Final V3 Dual-Shield)
+## From 16 K-grams to 6 Fingerprints (Final V3.1 - Fix 7)
 
 ---
 
@@ -541,7 +541,7 @@ This is why winnowing is the gold standard for document fingerprinting!
 
 ## Part 2: Structural Winnowing (AST Nodes)
 
-**New in V3 (Fix 3)**: We now apply the exact same mathematical process shown above to the **AST node sequence**.
+**New in V3 (Fix 3 & Fix 7)**: We now apply the exact same mathematical process shown above to the **AST node sequence**, now using DFS traversal for accuracy.
 
 ### 1. Extract Nodes
 Instead of tokens, we extract structural node types.

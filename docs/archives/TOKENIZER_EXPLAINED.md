@@ -538,7 +538,7 @@ Union: 4
 Similarity: 4/4 = 100%
 ```
 
-**Result**: 100% token similarity → Flagged as "Exact copy"
+**Result**: 100% token similarity → Flagged as "Exact match"
 
 ---
 
@@ -660,7 +660,7 @@ The tokenizer uses a sophisticated pipeline combining:
 - **Winnowing algorithm** to create robust fingerprints
 - **Jaccard similarity** to compare fingerprints
 
-This makes it extremely difficult for students to hide plagiarism through simple tricks like renaming variables or adding dummy code. Combined with AST analysis (the second engine), we catch nearly all forms of code plagiarism.
+This makes it extremely difficult for students to hide plagiarism through simple tricks like renaming variables or adding dummy code. Combined with AST analysis (the second engine) and optimized k-gram sensitivity (Fix 7), we catch nearly all forms of code plagiarism.
 
 ---
 

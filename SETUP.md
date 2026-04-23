@@ -71,15 +71,14 @@ CREATE TABLE submissions (
 
 ## Running the Application
 
-### Run Demo
+### Run Python Stress Test
 ```bash
-python demo_for_team_leader.py
+python test_75_students.py
 ```
 
-### Run Tests
+### Run Java Stress Test
 ```bash
-# Complex evasion test cases
-python test_complex_evasion.py
+python test_1000_students_java.py
 ```
 
 ### Start API Server
@@ -94,8 +93,8 @@ Then visit: http://localhost:8000/docs
 ```
 plagiarism-service/
 ├── main.py                    # FastAPI REST API server
-├── demo_for_team_leader.py    # Main demonstration script
-├── test_complex_evasion.py    # Evasion scenario tests
+├── test_75_students.py        # Python 75-student stress test
+├── test_1000_students_java.py # Java 1,000-student stress test
 ├── requirements.txt           # Project dependencies
 ├── db/
 │   └── neon.py               # Database connection

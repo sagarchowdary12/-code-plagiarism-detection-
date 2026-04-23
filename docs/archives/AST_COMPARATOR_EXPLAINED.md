@@ -494,7 +494,7 @@ Union: all fingerprint hashes
 Similarity: len(intersection) / len(union) × 100
 ```
 
-**Result**: 100% AST similarity → Flagged as "Smart copy — logic identical"
+**Result**: 100% AST similarity → Flagged as "Low text overlap, high structural similarity"
 
 ---
 
@@ -580,7 +580,7 @@ AST and token-based engines work together:
 ### Scenario 2: Dummy Code Added
 - **Token**: 57% (extra tokens lower score)
 - **AST**: 100% (structure unchanged)
-- **Verdict**: Smart copy — logic identical ✅
+- **Verdict**: Low text overlap, high structural similarity ✅
 
 ### Scenario 3: Different Algorithms
 - **Token**: 25% (very different code)
@@ -617,6 +617,8 @@ def walk(n):
     for c in ast.iter_child_nodes(n): walk(c)
 walk(tree)
 ```
+
+**Fix 7 Update**: We now use **Depth-First Search (DFS)** recursion instead of `ast.walk()` to strictly preserve the top-to-bottom logical execution sequence of the student's code. This eliminates false positives where layer-based node extraction previously matched unrelated code blocks.
 
 ### 2. Tree-Sitter
 **Purpose**: Parse 26+ languages into AST

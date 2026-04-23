@@ -50,7 +50,9 @@ plagiarism-service/
 │   └── neon.py                 # Neon Serverless Database Logic
 ├── models/
 │   └── schemas.py              # Schema for label-based metrics (Fix 4)
-└── demo_for_team_leader.py      # New Comprehensive Demo Script
+├── main.py                      # FastAPI REST API
+├── test_75_students.py          # Python Stress Test
+├── test_1000_students_java.py   # Java Stress Test (1,000 students)
 ```
 
 ---
@@ -64,6 +66,7 @@ This version of the service implements six critical fixes to move from a prototy
 4. Fix 4: Label-Derived Metrics  - Dashboard summary is now powered by detection labels.
 5. Fix 5: Neutral Recalibration  - All labels converted to legally safe, signal-based terms.
 6. Fix 6: Strict Token Gating  - Comments are stripped before checking code length.
+7. Fix 7: AST DFS & Tuning     - Depth-First Search and k-gram sensitivity tuning.
 
 ---
 
@@ -95,17 +98,20 @@ Result : Even if a student renames `max` to `highest` and adds 10 `print()` stat
 
 ## Demo Walkthrough
 
-### Running the Demo
+### Running the Stress Tests
 ```bash
-python demo_for_team_leader.py
+# Python
+python test_75_students.py
+
+# Java
+python test_1000_students_java.py
 ```
 
 ### Key Demo Segments:
-- **Set A**: String algorithms in **Go, Rust, Kotlin**.
-- **Set B**: Data structures in **Python, Java, JS**.
-- **Set C (Critical)**: Two different algorithms to prove **ZERO false positives**.
-- **Set D**: Evasion attempt (Loop mutation) caught via AST.
-- **Multi-Lang**: Bubble Sort across 5 different parsers.
+- **Set A**: Python stress test (75 students).
+- **Set B**: Java stress test (1,000 students).
+- **Critical Logic**: Proves ZERO cross-algorithm false positives.
+- **Structural Integrity**: DFS traversal catches reordered logic.
 
 ---
 

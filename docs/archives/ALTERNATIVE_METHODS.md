@@ -491,7 +491,7 @@ def hybrid_plagiarism_check(code_a, code_b):
     final_sim = (token_sim * 0.4 + cfg_sim * 0.3 + semantic_sim * 0.3)
     
     if final_sim >= 70:
-        return {"similarity": final_sim, "label": "Smart copy detected", "method": "hybrid"}
+        return {"similarity": final_sim, "label": "Likely logic overlap detected", "method": "hybrid"}
     else:
         return {"similarity": final_sim, "label": "Moderately similar", "method": "hybrid"}
 ```

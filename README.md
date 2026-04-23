@@ -8,8 +8,8 @@ A production-ready FastAPI service that detects code plagiarism across 26+ progr
 plagiarism-service/
 │
 ├── 📄 main.py                    # FastAPI REST API server (START HERE)
-├── 📄 demo_for_team_leader.py    # Main demonstration script
-├── 📄 test_complex_evasion.py    # Evasion scenario tests
+├── 📄 test_75_students.py        # Python 75-student stress test
+├── 📄 test_1000_students_java.py # Java 1,000-student stress test
 │
 ├── 📁 models/                    # API request/response schemas
 │   └── schemas.py
@@ -31,9 +31,14 @@ plagiarism-service/
 
 ## Quick Start
 
-### Run Demo
+### Run Stress Test (Python)
 ```bash
-python demo_for_team_leader.py
+python test_75_students.py
+```
+
+### Run Stress Test (Java)
+```bash
+python test_1000_students_java.py
 ```
 
 ### Start API Server
@@ -48,7 +53,7 @@ Then visit: http://localhost:8000/docs
 - ✅ 26+ programming languages supported
 - ✅ Dual-engine detection (Token + AST)
 - ✅ Catches renamed variables and dummy code
-- ✅ Tree-Sitter Winnowing prevents AST destruction
+- ✅ 7+ architectural fixes for enterprise stability (DFS, k-gram tuning)
 - ✅ 7 risk classification levels
 - ✅ REST API with automatic documentation
 - ✅ Scalable batch processing
