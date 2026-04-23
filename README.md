@@ -10,6 +10,7 @@ plagiarism-service/
 ├── 📄 main.py                    # FastAPI REST API server (START HERE)
 ├── 📄 test_75_students.py        # Python 75-student stress test
 ├── 📄 test_1000_students_java.py # Java 1,000-student stress test
+├── 📄 test_mixed_2000_students.py # Mixed 2,000-student test (Ultimate)
 │
 ├── 📁 models/                    # API request/response schemas
 │   └── schemas.py
@@ -39,6 +40,11 @@ python test_75_students.py
 ### Run Stress Test (Java)
 ```bash
 python test_1000_students_java.py
+```
+
+### Run Mixed Stress Test (2,000 students)
+```bash
+python test_mixed_2000_students.py
 ```
 
 ### Start API Server

@@ -81,6 +81,11 @@ python test_75_students.py
 python test_1000_students_java.py
 ```
 
+### Run Mixed Stress Test (Ultimate)
+```bash
+python test_mixed_2000_students.py
+```
+
 ### Start API Server
 ```bash
 uvicorn main:app --reload
@@ -95,6 +100,7 @@ plagiarism-service/
 ├── main.py                    # FastAPI REST API server
 ├── test_75_students.py        # Python 75-student stress test
 ├── test_1000_students_java.py # Java 1,000-student stress test
+├── test_mixed_2000_students.py # Mixed language stress test
 ├── requirements.txt           # Project dependencies
 ├── db/
 │   └── neon.py               # Database connection
