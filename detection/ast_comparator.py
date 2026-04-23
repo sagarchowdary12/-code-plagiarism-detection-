@@ -12,6 +12,7 @@ from tree_sitter import Language, Parser
 def _try_import(module_name):
     try:
         import importlib
+
         return importlib.import_module(module_name)
     except ImportError:
         return None
@@ -30,6 +31,7 @@ if _ts_php is not None:
         @staticmethod
         def language():
             return _php_module.language_php()
+
     _ts_php = _PHPWrapper()
 
 _ts_rust = _try_import("tree_sitter_rust")
@@ -44,6 +46,7 @@ if _ts_ts_raw is not None:
         @staticmethod
         def language():
             return _ts_ts_mod.language_typescript()
+
     _ts_ts = _TSWrapper()
 else:
     _ts_ts = None
@@ -65,36 +68,35 @@ _ts_ocaml = _try_import("tree_sitter_ocaml")
 # LANGUAGE REGISTRY
 # ─────────────────────────────────────────
 LANGUAGE_REGISTRY = {
-    "javascript":  _ts_js,
-    "js":          _ts_js,
-    "typescript":  _ts_ts,
-    "ts":          _ts_ts,
-    "html":        _ts_html,
-    "css":         _ts_css,
-    "json":        _ts_json,
-    "yaml":        _ts_yaml,
-    "toml":        _ts_toml,
-    "java":        _ts_java,
-    "c":           _ts_c,
-    "cpp":         _ts_cpp,
-    "c++":         _ts_cpp,
-    "rust":        _ts_rust,
-    "go":          _ts_go,
-    "swift":       _ts_swift,
-    "php":         _ts_php,
-    "ruby":        _ts_ruby,
-    "bash":        _ts_bash,
-    "shell":       _ts_bash,
-    "lua":         _ts_lua,
-    "kotlin":      _ts_kotlin,
-    "scala":       _ts_scala,
-    "haskell":     _ts_haskell,
-    "ocaml":       _ts_ocaml,
-    "sql":         _ts_sql,
+    "javascript": _ts_js,
+    "js": _ts_js,
+    "typescript": _ts_ts,
+    "ts": _ts_ts,
+    "html": _ts_html,
+    "css": _ts_css,
+    "json": _ts_json,
+    "yaml": _ts_yaml,
+    "toml": _ts_toml,
+    "java": _ts_java,
+    "c": _ts_c,
+    "cpp": _ts_cpp,
+    "c++": _ts_cpp,
+    "rust": _ts_rust,
+    "go": _ts_go,
+    "swift": _ts_swift,
+    "php": _ts_php,
+    "ruby": _ts_ruby,
+    "bash": _ts_bash,
+    "shell": _ts_bash,
+    "lua": _ts_lua,
+    "kotlin": _ts_kotlin,
+    "scala": _ts_scala,
+    "haskell": _ts_haskell,
+    "ocaml": _ts_ocaml,
+    "sql": _ts_sql,
 }
 
-LANGUAGE_REGISTRY = {k: v for k,
-                     v in LANGUAGE_REGISTRY.items() if v is not None}
+LANGUAGE_REGISTRY = {k: v for k, v in LANGUAGE_REGISTRY.items() if v is not None}
 print(f"[AST] Tree-Sitter loaded for: {sorted(set(LANGUAGE_REGISTRY.keys()))}")
 
 # ─────────────────────────────────────────
@@ -104,11 +106,12 @@ print(f"[AST] Tree-Sitter loaded for: {sorted(set(LANGUAGE_REGISTRY.keys()))}")
 
 def clean_code(source_code: str) -> str:
     try:
-        return codecs.decode(source_code, 'unicode_escape')
+        return codecs.decode(source_code, "unicode_escape")
     except Exception:
-        cleaned = source_code.replace('\\n', '\n')
-        cleaned = source_code.replace('\\t', '\t')
+        cleaned = source_code.replace("\\n", "\n")
+        cleaned = source_code.replace("\\t", "\t")
         return cleaned
+
 
 # ─────────────────────────────────────────
 # PYTHON AST
@@ -116,27 +119,71 @@ def clean_code(source_code: str) -> str:
 
 
 def get_python_ast_nodes(source_code: str) -> list:
-    code = clean_code(source_code)
+    # Try parsing raw code first (for local tests/API)
+    # If it fails, try cleaning (for DB source)
     try:
-        tree = ast.parse(code)
+        tree = ast.parse(source_code)
     except SyntaxError:
-        return []
+        try:
+            code = clean_code(source_code)
+            tree = ast.parse(code)
+        except Exception:
+            return []
 
     # Filter to only structural/control flow nodes, ignore expression details and calls
     structural_types = {
-        'Module', 'FunctionDef', 'AsyncFunctionDef', 'ClassDef',
-        'Return', 'Delete', 'Assign', 'AugAssign', 'AnnAssign',
-        'For', 'AsyncFor', 'While', 'If', 'With', 'AsyncWith',
-        'Raise', 'Try', 'Assert', 'Import', 'ImportFrom',
-        'Global', 'Nonlocal', 'Pass', 'Break', 'Continue',
-        'BoolOp', 'BinOp', 'UnaryOp', 'Lambda', 'IfExp',
-        'Compare', 'Attribute', 'Subscript',
-        'ListComp', 'SetComp', 'DictComp', 'GeneratorExp'
+        "Module",
+        "FunctionDef",
+        "AsyncFunctionDef",
+        "ClassDef",
+        "Return",
+        "Delete",
+        "Assign",
+        "AugAssign",
+        "AnnAssign",
+        "For",
+        "AsyncFor",
+        "While",
+        "If",
+        "With",
+        "AsyncWith",
+        "Raise",
+        "Try",
+        "Assert",
+        "Import",
+        "ImportFrom",
+        "Global",
+        "Nonlocal",
+        "Pass",
+        "Break",
+        "Continue",
+        "BoolOp",
+        "BinOp",
+        "UnaryOp",
+        "Lambda",
+        "IfExp",
+        "Compare",
+        "Attribute",
+        "Subscript",
+        "ListComp",
+        "SetComp",
+        "DictComp",
+        "GeneratorExp",
         # Removed 'Call' - function calls like print() should be ignored
     }
-    
-    return [type(node).__name__ for node in ast.walk(tree) 
-            if type(node).__name__ in structural_types]
+
+    nodes = []
+
+    def walk(node):
+        name = type(node).__name__
+        if name in structural_types:
+            nodes.append(name)
+        for child in ast.iter_child_nodes(node):
+            walk(child)
+
+    walk(tree)
+    return nodes
+
 
 # ─────────────────────────────────────────
 # TREE-SITTER PARSER
@@ -147,7 +194,7 @@ def get_tree_sitter_nodes(source_code: str, lang_module) -> list:
     code = clean_code(source_code)
     try:
         lang = Language(lang_module.language())
-        parser = Parser(lang) 
+        parser = Parser(lang)
         tree = parser.parse(bytes(code, "utf8"))
 
         nodes = []
@@ -164,6 +211,7 @@ def get_tree_sitter_nodes(source_code: str, lang_module) -> list:
         print(f"[AST] Tree-Sitter Parsing Error: {e}")
         return []
 
+
 # ─────────────────────────────────────────
 # ROUTER
 # ─────────────────────────────────────────
@@ -173,7 +221,7 @@ def get_tree_sitter_nodes(source_code: str, lang_module) -> list:
 def get_structural_tokens(source_code: str, language: str) -> tuple:
     lang = language.lower().strip()
 
-    if lang == 'python':
+    if lang == "python":
         return tuple(get_python_ast_nodes(source_code))
 
     module = LANGUAGE_REGISTRY.get(lang)
@@ -183,13 +231,14 @@ def get_structural_tokens(source_code: str, language: str) -> tuple:
     print(f"[AST] Unsupported language '{language}'")
     return tuple()
 
+
 # ─────────────────────────────────────────
 # WINNOWING (AST)
 # ─────────────────────────────────────────
 
 
 def hash_kgram(kgram: tuple) -> int:
-    return int(hashlib.md5(' '.join(kgram).encode()).hexdigest(), 16)
+    return int(hashlib.md5(" ".join(kgram).encode()).hexdigest(), 16)
 
 
 def winnowing_ast(nodes: list, k: int = 6, window_size: int = 4) -> set:
@@ -203,11 +252,11 @@ def winnowing_ast(nodes: list, k: int = 6, window_size: int = 4) -> set:
 
     hashes = []
     for i in range(len(nodes) - k + 1):
-        kgram = tuple(nodes[i:i+k])
+        kgram = tuple(nodes[i : i + k])
         hashes.append(hash_kgram(kgram))
 
     fingerprints = set()
-    
+
     # Fallback 2: Short code. We have hashes, but not enough to slide the window.
     # So we just use all the hashes we generated.
     if len(hashes) < window_size:
@@ -215,24 +264,25 @@ def winnowing_ast(nodes: list, k: int = 6, window_size: int = 4) -> set:
     else:
         # Standard Winnowing: minimum hash in each sliding window
         for i in range(len(hashes) - window_size + 1):
-            window = hashes[i:i+window_size]
+            window = hashes[i : i + window_size]
             fingerprints.add(min(window))
 
     return fingerprints
+
 
 # ─────────────────────────────────────────
 # SIMILARITY (WITH WINNOWING AST)
 # ─────────────────────────────────────────
 
 
-def ast_similarity_percent(code_a: str, code_b: str, language: str = 'python') -> float:
+def ast_similarity_percent(code_a: str, code_b: str, language: str = "python") -> float:
     nodes_a = get_structural_tokens(code_a, language)
     nodes_b = get_structural_tokens(code_b, language)
 
     if not nodes_a or not nodes_b:
         return 0.0
 
-    # FIX 3: Use winnowing fingerprints instead of unordered set extraction.
+    # Use winnowing fingerprints instead of unordered set extraction.
     # This mathematically preserves code ordering, repetition, and depth.
     set_a = winnowing_ast(nodes_a)
     set_b = winnowing_ast(nodes_b)

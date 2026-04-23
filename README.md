@@ -11,6 +11,8 @@ plagiarism-service/
 ├── 📄 test_75_students.py        # Python 75-student stress test
 ├── 📄 test_1000_students_java.py # Java 1,000-student stress test
 ├── 📄 test_mixed_2000_students.py # Mixed 2,000-student test (Ultimate)
+├── 📁 tests/                     # Automated Unit Tests (New!)
+│   └── 📄 test_logic.py          # Professional Pytest suite
 │
 ├── 📁 models/                    # API request/response schemas
 │   └── schemas.py
@@ -47,6 +49,11 @@ python test_1000_students_java.py
 python test_mixed_2000_students.py
 ```
 
+### Run Automated Unit Tests (Professional)
+```bash
+pytest
+```
+
 ### Start API Server
 ```bash
 uvicorn main:app --reload
@@ -59,7 +66,7 @@ Then visit: http://localhost:8000/docs
 - ✅ 26+ programming languages supported
 - ✅ Dual-engine detection (Token + AST)
 - ✅ Catches renamed variables and dummy code
-- ✅ 7+ architectural fixes for enterprise stability (DFS, k-gram tuning)
+- ✅ Enterprise stability and optimized algorithms (DFS, Winnowing, etc.)
 - ✅ 7 risk classification levels
 - ✅ REST API with automatic documentation
 - ✅ Scalable batch processing

@@ -155,6 +155,13 @@ Returns metrics derived from the new **Fix 4** summary logic.
 
 ---
 
+### Professional Testing Suite
+Show your manager that the system is self-verifying.
+- **Run**: `pytest`
+- **What it proves**: "We have automated unit tests that verify variable renaming detection, comment stripping, and structural logical matching (Fix 7). This ensures the system remains accurate even as we scale."
+
+---
+
 ### Final Service Status
 - **Accuracy**: High (Dual-Engine)
 - **Legal Stand**: Neutral (Signal-Based Labels)

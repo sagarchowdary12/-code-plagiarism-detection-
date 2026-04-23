@@ -86,6 +86,12 @@ python test_1000_students_java.py
 python test_mixed_2000_students.py
 ```
 
+### Run Professional Unit Tests
+```bash
+pip install pytest
+pytest
+```
+
 ### Start API Server
 ```bash
 uvicorn main:app --reload
@@ -101,6 +107,7 @@ plagiarism-service/
 ├── test_75_students.py        # Python 75-student stress test
 ├── test_1000_students_java.py # Java 1,000-student stress test
 ├── test_mixed_2000_students.py # Mixed language stress test
+├── tests/                     # Automated unit tests folder
 ├── requirements.txt           # Project dependencies
 ├── db/
 │   └── neon.py               # Database connection

@@ -1,19 +1,23 @@
 from itertools import combinations
 from collections import defaultdict
-from detection.tokenizer import token_similarity_percent, clean_code_from_db as clean_code, tokenize
+from detection.tokenizer import (
+    token_similarity_percent,
+    clean_code_from_db as clean_code,
+    tokenize,
+)
 from detection.ast_comparator import ast_similarity_percent
 
 # Minimum tokens required to compare two submissions
 MIN_TOKEN_LENGTH = 5
 
-# FIX 2: Hybrid Reporting Thresholds
+# Hybrid Reporting Thresholds:
 # Pairs are only dropped if BOTH signals fall below these minimums
 MIN_TOKEN_REPORT_PCT = 25.0
 MIN_AST_REPORT_PCT = 40.0
 
 
 def get_token_count(source_code: str, language: str) -> int:
-    # FIX 6: Use the actual normalized tokens for gating, not just raw whitespace text.
+    # Use the actual normalized tokens for gating to avoid whitespace noise
     return len(tokenize(source_code, language))
 
 
@@ -59,6 +63,7 @@ def get_label(token_pct: float, ast_pct: float) -> str:
 
     return "Likely original"
 
+
 # The Execution Loop
 
 
@@ -89,13 +94,11 @@ def compare_all_submissions(submissions: list) -> list:
         # Get token similarity percentage
         tok_pct = token_similarity_percent(code_a, code_b, language)
 
-        # FIX 2: Compute AST similarity for ALL pairs.
-        # Removing the previous early 'continue' allows us to catch smart
-        # rewrites where token similarity is low but structure is identical.
+        # Compute AST similarity for all pairs to catch smart rewrites
+        # where token similarity is low but structure is identical.
         ast_pct = ast_similarity_percent(code_a, code_b, language)
 
-        # FIX 2: Hybrid decision rule.
-        # Either token >= 25% or AST >= 40% independently flags the result.
+        # Hybrid decision rule: Either token >= 25% or AST >= 40% independently flags the result.
         # We only drop the pair if BOTH are considered noise.
         if tok_pct < MIN_TOKEN_REPORT_PCT and ast_pct < MIN_AST_REPORT_PCT:
             continue
@@ -103,15 +106,17 @@ def compare_all_submissions(submissions: list) -> list:
         # Get human readable label
         label = get_label(tok_pct, ast_pct)
 
-        results.append({
-            "candidate_a":          sub_a["candidate_id"],
-            "candidate_b":          sub_b["candidate_id"],
-            "question_id":          question_id,
-            "language":             language,
-            "token_similarity_pct": tok_pct,
-            "ast_similarity_pct":   ast_pct,
-            "label":                label,
-        })
+        results.append(
+            {
+                "candidate_a": sub_a["candidate_id"],
+                "candidate_b": sub_b["candidate_id"],
+                "question_id": question_id,
+                "language": language,
+                "token_similarity_pct": tok_pct,
+                "ast_similarity_pct": ast_pct,
+                "label": label,
+            }
+        )
 
     # Sort by token similarity — highest first so worst cases appear at top
     results.sort(key=lambda x: x["token_similarity_pct"], reverse=True)
@@ -120,9 +125,8 @@ def compare_all_submissions(submissions: list) -> list:
 
 
 def run_plagiarism_check(all_submissions: list) -> list:
-    # FIX 1: Group by (question_id, language) — not just question_id.
-    # This prevents cross-language submissions from being silently compared
-    # using the wrong parser, which produces meaningless similarity scores.
+    # Group by (question_id, language) to prevent cross-language submissions
+    # from being compared with the wrong parser.
     groups = defaultdict(list)
     for submission in all_submissions:
         key = (submission["question_id"], submission["language"].lower().strip())
@@ -134,9 +138,11 @@ def run_plagiarism_check(all_submissions: list) -> list:
             continue
 
         total_pairs = len(group) * (len(group) - 1) // 2
-        print(f"  Checking {question_id} [{language}] — "
-              f"{len(group)} submissions — "
-              f"{total_pairs} possible pairs")
+        print(
+            f"  Checking {question_id} [{language}] — "
+            f"{len(group)} submissions — "
+            f"{total_pairs} possible pairs"
+        )
 
         results = compare_all_submissions(group)
         print(f"  Pairs worth reporting: {len(results)}")

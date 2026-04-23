@@ -89,26 +89,30 @@ public class Solution_{VAR} {{
 templates = [algo_1, algo_2, algo_3, algo_4]
 
 comments = [
-    "Check if prime", "Java solution", "Prime check",
-    "Assignment task", "Return true for prime", "Logic here"
+    "Check if prime",
+    "Java solution",
+    "Prime check",
+    "Assignment task",
+    "Return true for prime",
+    "Logic here",
 ]
 
 dead_codes = [
     "int a = 10;\n        int b = 20;",
-    "System.out.println(\"Checking\");",
+    'System.out.println("Checking");',
     "// dummy",
     "int[] temp = new int[0];",
     "boolean flag = true;",
-    ""
+    "",
 ]
 
 if __name__ == "__main__":
     submissions = []
     random.seed(42)  # For reproducible results
 
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("  DUAL-ENGINE PLAGIARISM DETECTOR — 1,000 STUDENT STRESS TEST (JAVA)")
-    print("="*70)
+    print("=" * 70)
 
     print("Generating 1,000 Java students using 4 distinct algorithms...")
     for i in range(1, 1001):
@@ -117,19 +121,21 @@ if __name__ == "__main__":
         dc = random.choice(dead_codes)
 
         code = t.format(VAR=i, COMMENT=c, DEAD_CODE=dc)
-        submissions.append({
-            "candidate_id": f"s_{i:04d}",
-            "question_id": "Q_PRIME_JAVA",
-            "language": "java",
-            "source_code": code
-        })
+        submissions.append(
+            {
+                "candidate_id": f"s_{i:04d}",
+                "question_id": "Q_PRIME_JAVA",
+                "language": "java",
+                "source_code": code,
+            }
+        )
 
     total_pairs = (1000 * 999) // 2
     print(f"Total students      : {len(submissions)}")
     print(f"Language            : Java")
     print(f"Unique approaches   : 4")
     print(f"Comparisons to run  : {total_pairs:,} pairs")
-    print("="*70)
+    print("=" * 70)
 
     print("Starting dual-engine scoring... (this may take a couple of minutes...)")
     start_time = time.time()
@@ -138,9 +144,9 @@ if __name__ == "__main__":
     results = run_plagiarism_check(submissions)
 
     end_time = time.time()
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print(f"  SCORING COMPLETE IN {end_time - start_time:.2f} SECONDS")
-    print("="*70)
+    print("=" * 70)
 
     print(f"\n  Total flagged pairs : {len(results):,}")
 
